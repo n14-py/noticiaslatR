@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 // --- Constantes ---
-const API_URL = 'https://lfaftechapi.onrender.com/api';
+const API_URL = 'https://lfaftechapi.onrender.com';
 const PLACEHOLDER_IMG_PATH = '/images/placeholder.jpg'; // Ruta local
 
 // --- 1. FUNCIÓN (Se ejecuta en el SERVIDOR) ---

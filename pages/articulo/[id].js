@@ -1,28 +1,23 @@
+// Archivo: pages/articulo/[id].js
+
 import Layout from '../../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
-const API_URL = 'https://lfaftechapi.onrender.com';
-const PLACEHOLDER_IMG = '/images/placeholder.jpg';
+// --- Constantes ---
+const API_URL = 'https://lfaftechapi.onrender.com/api';
+const PLACEHOLDER_IMG_PATH = '/images/placeholder.jpg'; // Ruta local
 
-// --- ¡NUEVA FUNCIÓN! ---
-// Esta función le dice a Next.js CÓMO manejar los 1 millón de IDs
+// --- 1. FUNCIÓN (Se ejecuta en el SERVIDOR) ---
 export async function getStaticPaths() {
   return {
-    // No generamos NINGÚN artículo por adelantado
-    paths: [], 
-    
-    // ¡ESTA ES LA LÍNEA MÁGICA!
-    // 'blocking' significa: "Si no tienes el HTML, haz que el usuario espere,
-    // llama a la API, construye el HTML, guárdalo, y luego entrégaselo."
-    // Esto es perfecto para SEO y rendimiento.
-    fallback: 'blocking' 
+    paths: [],
+    fallback: 'blocking',
   };
 }
 
-// --- ¡FUNCIÓN MODIFICADA! ---
-// Cambiamos 'getServerSideProps' por 'getStaticProps'
+// --- 2. FUNCIÓN (Se ejecuta en el SERVIDOR) ---
 export async function getStaticProps(context) {
     const { id } = context.params;
     const articleUrl = `${API_URL}/api/article/${id}`;
@@ -34,7 +29,7 @@ export async function getStaticProps(context) {
         }
         const article = await res.json();
 
-        // Buscamos recomendados (igual que antes)
+        // Buscamos recomendados
         const recommendedUrl = `${API_URL}/api/articles/recommended?sitio=${article.sitio}&categoria=${article.categoria}&excludeId=${article._id}`;
         let recommended = [];
         try {
@@ -43,42 +38,45 @@ export async function getStaticProps(context) {
                 recommended = await resRec.json();
             }
         } catch (recError) {
-            console.error("Error cargando recomendados:", recError.message);
+             console.error("Error cargando recomendados:", recError.message);
         }
 
         return {
             props: {
                 article,
                 recommended,
-                canonicalUrl: `https://www.noticias.lat/articulo/${id}` 
+                canonicalUrl: `https://www.noticias.lat/articulo/${id}`
             },
-            // ¡LÍNEA MÁGICA 2!
-            // Le decimos a Vercel que vuelva a revisar este artículo
-            // cada 1 hora (3600 segundos) en segundo plano, por si cambió.
-            revalidate: 3600 
+            revalidate: 3600 // Vuelve a generar la página cada 1 hora
         };
     } catch (error) {
         console.error("Error en getStaticProps (Artículo):", error.message);
         return {
-            notFound: true, // Esto mostrará la página 404
+            notFound: true, // Muestra la página 404
         };
     }
 }
 
-// --- TODO EL RESTO DEL ARCHIVO (LA PÁGINA) ES EXACTAMENTE IGUAL ---
-// No necesitas copiar esto, ya lo tienes. Solo asegúrate
-// de que las funciones de arriba (getStaticPaths y getStaticProps)
-// reemplacen a tu antigua getServerSideProps.
-
+// --- 3. COMPONENTE DE LA PÁGINA ---
 export default function ArticuloPage({ article, recommended, canonicalUrl }) {
+    
+    // --- ¡INICIO DE LA SOLUCIÓN! ---
+    // 1. Definimos la URL base de tu sitio
+    const BASE_URL = 'https://www.noticias.lat';
+    
+    // 2. Creamos la URL absoluta del placeholder
+    const PLACEHOLDER_URL_ABSOLUTA = `${BASE_URL}${PLACEHOLDER_IMG_PATH}`;
 
-    // ... (todo el código de tu página de artículo que ya pegamos)
-    // ... (Head, Layout, ShareButtons, etc.)
+    // 3. Decidimos qué imagen usar
+    const finalImageUrl = (article.imagen && article.imagen.startsWith('http'))
+        ? article.imagen  // Usar la imagen de la API (que ya es absoluta)
+        : PLACEHOLDER_URL_ABSOLUTA; // Usar el placeholder absoluto
+    // --- FIN DE LA SOLUCIÓN ---
     
     const descriptionSnippet = (article.descripcion || 'Sin descripción').substring(0, 150) + '...';
-    const imageUrl = article.imagen || PLACEHOLDER_IMG;
 
-    let contenidoPrincipalHTML;
+    // Formatear el cuerpo del artículo
+    let contenidoPrincipalHTML = '';
     if (article.articuloGenerado) {
         const textoLimpio = article.articuloGenerado
             .replace(/##\s/g, '')       
@@ -101,30 +99,30 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
 
     const shareButtons = createShareButtons(canonicalUrl, article.titulo);
 
-    const adSlotTopBanner = (
-        <div className="ad-slot-placeholder" style={{ minHeight: '100px' }}>
-            <p>Publicidad</p>
-        </div>
-    );
-    const adSlotBottom = (
-        <div className="ad-slot-placeholder" style={{ minHeight: '250px' }}>
+    // Placeholder de anuncios
+    const adSlot = (
+        <div className="ad-slot-placeholder" style={{ minHeight: '100px', margin: '1.5rem 0' }}>
             <p>Publicidad</p>
         </div>
     );
 
     return (
         <Layout>
+            {/* --- 4. SEO Dinámico --- */}
             <Head>
                 <title>{article.titulo} - Noticias.lat</title>
-                <meta name="description" content={descriptionSnippet} id="meta-description" />
-                <link rel="canonical" href={canonicalUrl} id="canonical-link" />
+                <meta name="description" content={descriptionSnippet} />
+                <link rel="canonical" href={canonicalUrl} />
                 
-                <meta property="og:title" content={article.titulo} id="og-title" />
-                <meta property="og:description" content={descriptionSnippet} id="og-description" />
+                <meta property="og:title" content={article.titulo} />
+                <meta property="og:description" content={descriptionSnippet} />
                 <meta property="og:type" content="article" />
-                <meta property="og:url" content={canonicalUrl} id="og-url" />
-                <meta property="og:image" content={imageUrl} id="og-image" />
+                <meta property="og:url" content={canonicalUrl} />
+                
+                {/* --- ¡AQUÍ ESTÁ LA CORRECCIÓN APLICADA! --- */}
+                <meta property="og:image" content={finalImageUrl} /> 
 
+                {/* Datos Estructurados (JSON-LD) */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -132,7 +130,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                             "@context": "https://schema.org",
                             "@type": "NewsArticle",
                             "headline": article.titulo,
-                            "image": [ imageUrl ],
+                            "image": [ finalImageUrl ], // Usamos la URL final
                             "datePublished": article.fecha,
                             "dateModified": article.updatedAt || article.fecha,
                             "author": [{"@type": "Organization", "name": "Noticias.lat"}],
@@ -141,7 +139,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                                 "name": "Noticias.lat",
                                 "logo": {
                                     "@type": "ImageObject",
-                                    "url": "https://www.noticias.lat/favicon.png"
+                                    "url": `${BASE_URL}/favicon.png`
                                 }
                             },
                             "description": descriptionSnippet
@@ -150,11 +148,12 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                 />
             </Head>
 
+            {/* --- 5. Contenido de la Página --- */}
             <div className="container">
                 <div id="article-content" className="article-page-container">
                     <h1>{article.titulo}</h1>
                     
-                    {adSlotTopBanner}
+                    {adSlot}
                     
                     <p className="article-meta">
                         Publicado el: {new Date(article.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} | Fuente: {article.fuente}
@@ -163,10 +162,10 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                     {shareButtons}
                     
                     <img 
-                        src={imageUrl} 
+                        src={finalImageUrl} // Usamos la URL final aquí también
                         alt={article.titulo} 
                         className="article-main-image" 
-                        onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
+                        onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_URL_ABSOLUTA; }}
                     />
 
                     <div 
@@ -182,9 +181,10 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                         </a>
                     </div>
                     
-                    {adSlotBottom}
+                    {adSlot}
                 </div>
 
+                {/* --- 6. Sección de Recomendados --- */}
                 {recommended.length > 0 && (
                     <section id="recommended-section" className="main-content" style={{ paddingTop: '1rem' }}>
                         <h2>Artículos Recomendados</h2>
@@ -200,7 +200,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
     );
 }
 
-// ... (Las funciones 'createShareButtons' y 'RecommendedCard' se quedan igual) ...
+// --- Componentes Ayudantes (Sin cambios) ---
 
 function createShareButtons(url, title) {
     const encodedUrl = encodeURIComponent(url);
@@ -218,7 +218,7 @@ function createShareButtons(url, title) {
 }
 
 function RecommendedCard({ article }) {
-    const imagenUrl = article.imagen || PLACEHOLDER_IMG;
+    const imagenUrl = article.imagen || PLACEHOLDER_IMG_PATH; // Usar ruta relativa para <img>
     const articleUrl = `/articulo/${article._id}`;
 
     return (
@@ -229,7 +229,7 @@ function RecommendedCard({ article }) {
                         src={imagenUrl} 
                         alt={article.titulo} 
                         loading="lazy" 
-                        onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
+                        onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG_PATH; }}
                     />
                 </a>
             </Link>

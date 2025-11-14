@@ -1,5 +1,5 @@
 // Archivo: pages/articulo/[id].js
-// ¡MODIFICADO PARA MOSTRAR VIDEO!
+// ¡MODIFICADO PARA MOSTRAR VIDEO DE EZOIC O CLOUDINARY!
 
 import Layout from '../../components/Layout';
 import Head from 'next/head';
@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 // --- Constantes ---
-// ¡CAMBIO AQUÍ! Ahora lee la variable de entorno
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lfaftechapi.onrender.com';
 const PLACEHOLDER_IMG_PATH = '/images/placeholder.jpg'; // Ruta local
 
@@ -63,7 +62,6 @@ export async function getStaticProps(context) {
 export default function ArticuloPage({ article, recommended, canonicalUrl }) {
     
     // --- Lógica de la imagen (miniatura) para SEO ---
-    // (Esto no cambia, las meta tags OG usan la miniatura)
     const BASE_URL = 'https://www.noticias.lat';
     const PLACEHOLDER_URL_ABSOLUTA = `${BASE_URL}${PLACEHOLDER_IMG_PATH}`;
     const finalImageUrl = (article.imagen && article.imagen.startsWith('http'))
@@ -101,6 +99,59 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
             <p>Publicidad</p>
         </div>
     );
+    
+    // --- ¡NUEVA LÓGICA DE VIDEO! ---
+    // Determinamos qué video mostrar
+    let videoPlayer = null;
+    
+    if (article.ezoicVideoUrl) {
+        // CASO 1: ¡ÉXITO! El robot encontró la URL de Ezoic
+        console.log("Mostrando video de Ezoic:", article.ezoicVideoUrl);
+        videoPlayer = (
+            <iframe 
+                src={article.ezoicVideoUrl} // URL de la PÁGINA de video (Ezoic lo maneja)
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                frameBorder="0" 
+                allow="autoplay; encrypted-media; fullscreen" 
+                allowFullScreen
+                title={article.titulo}
+            ></iframe>
+        );
+    } else if (article.cloudinary_url) {
+        // CASO 2: Video listo en Cloudinary, pero Ezoic aún no lo importa
+        console.log("Mostrando video de Cloudinary (fallback):", article.cloudinary_url);
+        videoPlayer = (
+            <video 
+                src={article.cloudinary_url}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                controls
+                autoPlay
+                muted
+                playsInline
+                poster={finalImageUrl} // Usa la miniatura como póster
+                title={article.titulo}
+            >
+                Tu navegador no soporta videos.
+            </video>
+        );
+    } else {
+        // CASO 3: No hay video (o está procesando), muestra la imagen
+        console.log("Mostrando imagen (sin video listo)");
+        videoPlayer = (
+            <img 
+                src={finalImageUrl}
+                alt={article.titulo} 
+                className="article-main-image" 
+                style={{ margin: 0, borderRadius: 0, width: '100%' }}
+                onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_URL_ABSOLUTA; }}
+            />
+        );
+    }
+    
+    // Determinamos si hay un video (para el JSON-LD)
+    const videoUrlParaSEO = article.ezoicVideoUrl || article.cloudinary_url;
+    // --- FIN DE LA LÓGICA DE VIDEO ---
+
 
     return (
         <Layout>
@@ -115,7 +166,6 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                 <meta property="og:type" content="article" />
                 <meta property="og:url" content={canonicalUrl} />
                 
-                {/* La meta imagen SIEMPRE es la miniatura (para Google y redes) */}
                 <meta property="og:image" content={finalImageUrl} /> 
 
                 {/* Datos Estructurados (JSON-LD) */}
@@ -126,7 +176,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                             "@context": "https://schema.org",
                             "@type": "NewsArticle",
                             "headline": article.titulo,
-                            "image": [ finalImageUrl ], // La miniatura
+                            "image": [ finalImageUrl ],
                             "datePublished": article.fecha,
                             "dateModified": article.updatedAt || article.fecha,
                             "author": [{"@type": "Organization", "name": "Noticias.lat"}],
@@ -140,14 +190,14 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                             },
                             "description": descriptionSnippet,
                             // ¡AÑADIR INFO DE VIDEO SI EXISTE!
-                            ...(article.videoUrl && article.videoProcessingStatus === 'complete' && {
+                            ...(videoUrlParaSEO && {
                                 "video": {
                                     "@type": "VideoObject",
                                     "name": article.titulo,
                                     "description": descriptionSnippet,
                                     "thumbnailUrl": finalImageUrl,
                                     "uploadDate": article.updatedAt || article.fecha,
-                                    "contentUrl": article.videoUrl // URL del video de Ezoic
+                                    "contentUrl": videoUrlParaSEO // URL del video (Ezoic o Cloudinary)
                                 }
                             })
                         }),
@@ -169,33 +219,13 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                     {shareButtons}
                     
                     {/* --- ¡INICIO DEL CAMBIO! --- */}
-                    {/* Lógica para mostrar video o imagen */}
+                    {/* Contenedor unificado para video o imagen */}
                     <div className="article-media-container" style={{ position: 'relative', width: '100%', background: '#000', borderRadius: 'var(--radio-borde)', marginBottom: '2rem', overflow: 'hidden' }}>
                         
-                        {/* CASO 1: El video está listo y existe */}
-                        {article.videoUrl && article.videoProcessingStatus === 'complete' ? (
-                            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                                {/* ¡IMPORTANTE! Aquí debes pegar el código
-                                    del reproductor de Ezoic, usando article.videoUrl */}
-                                <iframe 
-                                    src={article.videoUrl} 
-                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                                    frameBorder="0" 
-                                    allow="autoplay; encrypted-media" 
-                                    allowFullScreen
-                                    title={article.titulo}
-                                ></iframe>
-                            </div>
-                        ) : (
-                            /* CASO 2: El video NO está (o está procesando), muestra la imagen */
-                            <img 
-                                src={finalImageUrl}
-                                alt={article.titulo} 
-                                className="article-main-image" 
-                                style={{ margin: 0, borderRadius: 0, width: '100%' }} // Resetea márgenes
-                                onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_URL_ABSOLUTA; }}
-                            />
-                        )}
+                        <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                            {/* Aquí se renderiza el 'videoPlayer' que definimos arriba */}
+                            {videoPlayer}
+                        </div>
 
                     </div>
                     {/* --- FIN DEL CAMBIO --- */}
@@ -216,7 +246,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                     {adSlot}
                 </div>
 
-                {/* --- 6. Sección de Recomendados (Sin cambios) --- */}
+                {/* --- 6. Sección de Recomendados (Actualizada) --- */}
                 {recommended.length > 0 && (
                     <section id="recommended-section" className="main-content" style={{ paddingTop: '1rem' }}>
                         <h2>Artículos Recomendados</h2>
@@ -232,12 +262,12 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
     );
 }
 
-// --- Componentes Ayudantes (Sin cambios) ---
+// --- Componentes Ayudantes (Modificados) ---
 
 function createShareButtons(url, title) {
+    // (Sin cambios)
     const encodedUrl = encodeURIComponent(url);
     const encodedTitle = encodeURIComponent(title);
-
     return (
         <div className="share-buttons">
             <h4>Compartir esta noticia:</h4>
@@ -250,12 +280,13 @@ function createShareButtons(url, title) {
 }
 
 function RecommendedCard({ article }) {
-    const imagenUrl = article.imagen || PLACEHOLDER_IMG_PATH; // Usar ruta relativa para <img>
+    const imagenUrl = article.imagen || PLACEHOLDER_IMG_PATH; 
     const articleUrl = `/articulo/${article._id}`;
     
     // Icono de Play para los recomendados
     let playIcon = null;
-    if (article.videoUrl && article.videoProcessingStatus === 'complete') {
+    // ¡CAMBIO! Muestra el icono si el video está en Ezoic (complete) O en Cloudinary (pending_ezoic_import)
+    if (article.videoProcessingStatus === 'complete' || article.videoProcessingStatus === 'pending_ezoic_import') {
         playIcon = <span className="article-card-play-icon mini"><i className="fas fa-play"></i></span>;
     }
 

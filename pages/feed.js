@@ -13,7 +13,8 @@ const SITIO = 'noticias.lat';
 export async function getServerSideProps() {
     let initialVideos = [];
     try {
-        // Pedimos artículos que tengan el video completo y los ordenamos por fecha
+        // Pedimos artículos que tengan el video completo (estado 'complete')
+        // En nuestro nuevo flujo, 'complete' significa que YA tiene la 'ezoicVideoUrl'
         const url = `${API_URL}/api/articles?sitio=${SITIO}&videoStatus=complete&limite=5`;
         const res = await fetch(url);
         if (res.ok) {
@@ -108,11 +109,12 @@ export default function FeedPage({ initialVideos }) {
                     {initialVideos.map(article => (
                         <div key={article._id} className="feed-item">
                             <div className="feed-video-player">
-                                {/* ¡Aquí se muestra el reproductor de Ezoic! */}
+                                {/* --- ¡AQUÍ ESTÁ EL CAMBIO! --- */}
+                                {/* Usamos la 'ezoicVideoUrl' que nuestro robot-scraper consiguió */}
                                 <iframe 
-                                    src={article.videoUrl} 
+                                    src={article.ezoicVideoUrl} 
                                     frameBorder="0" 
-                                    allow="autoplay; encrypted-media" 
+                                    allow="autoplay; encrypted-media; fullscreen" 
                                     allowFullScreen
                                     title={article.titulo}
                                 ></iframe>

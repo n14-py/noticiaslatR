@@ -5,7 +5,8 @@ import { useRouter } from 'next/router';
 import { useState } from 'react'; // No necesitas 'useEffect' aquí
 
 // --- Constantes traídas de tu app.js ---
-const API_URL = 'https://lfaftechapi.onrender.com';
+// ¡CAMBIO AQUÍ! Ahora lee la variable de entorno o usa la de producción como fallback
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lfaftechapi.onrender.com';
 const SITIO = 'noticias.lat';
 const LIMITE_POR_PAGINA = 12;
 const PLACEHOLDER_IMG = '/images/placeholder.jpg'; // Ruta desde la carpeta /public
@@ -35,8 +36,6 @@ const CATEGORIAS_TITULOS = {
 export async function getServerSideProps(context) {
     
     // --- ¡LA LÍNEA MÁGICA PARA EL RENDIMIENTO! ---
-    // Le decimos a Vercel: "Guarda esta página por 60 segundos".
-    // 1000 usuarios = 1 sola llamada a tu API.
     context.res.setHeader(
         'Cache-Control',
         'public, s-maxage=60, stale-while-revalidate=120'
@@ -66,6 +65,15 @@ export async function getServerSideProps(context) {
     if (queryParams.categoria && queryParams.categoria !== 'todos' && !queryParams.query && !queryParams.pais) {
         url += `&categoria=${queryParams.categoria}`;
     }
+    
+    // ¡CAMBIO PARA PRUEBAS!
+    // Le pedimos a la API que nos traiga artículos con videos listos
+    // O artículos que aún no tienen videos (los 'pending' de texto)
+    // Esto asegura que el feed de staging muestre los videos procesados
+    if (process.env.NODE_ENV !== 'production') {
+         url += `&videoStatus=complete_or_pending`;
+    }
+
 
     try {
         // 4. Llamamos a tu API en Render
@@ -135,13 +143,10 @@ export default function Home({ data, queryParams, error }) {
         const newParams = new URLSearchParams();
         newParams.set('query', query);
         
-        // Si ya estábamos en un país, mantenemos el filtro
-        // Usamos router.query porque queryParams puede ser de una carga anterior
         if (router.query.pais) {
             newParams.set('pais', router.query.pais);
         }
         
-        // Redirigimos usando el router de Next.js (esto dispara un nuevo getServerSideProps)
         router.push(`/?${newParams.toString()}`);
     };
 
@@ -159,7 +164,6 @@ export default function Home({ data, queryParams, error }) {
                 <meta name="description" content={metaDescription} />
                 <meta property="og:title" content={`${pageTitle} - Noticias.lat`} />
                 <meta property="og:description" content={metaDescription} />
-                {/* La URL canónica la genera Next.js automáticamente */}
             </Head>
 
             {/* --- 4. Contenido de la Página (tu index.html) --- */}
@@ -183,7 +187,7 @@ export default function Home({ data, queryParams, error }) {
                                 type="button" 
                                 id="clear-search-button" 
                                 onClick={clearSearch}
-                                style={{ display: 'inline-block' }} // Mostramos el botón si hay un query
+                                style={{ display: 'inline-block' }}
                             >
                                 <i className="fas fa-times"></i>
                             </button>
@@ -195,21 +199,18 @@ export default function Home({ data, queryParams, error }) {
                     
                     {/* --- Contenedor de Artículos --- */}
                     <div id="articles-container">
-                        {/* Si hay un error de API */}
                         {error && (
                             <div className="no-articles-message" style={{ color: 'red' }}>
                                 <p>{error}</p>
                             </div>
                         )}
 
-                        {/* Si no hay error, pero no hay artículos */}
                         {!error && data.articulos.length === 0 && (
                             <div className="no-articles-message">
                                 <p>No se encontraron noticias en esta sección.</p>
                             </div>
                         )}
 
-                        {/* Si hay artículos, los mostramos */}
                         {!error && data.articulos.map(article => (
                             <ArticleCard key={article._id} article={article} />
                         ))}
@@ -230,7 +231,6 @@ export default function Home({ data, queryParams, error }) {
 
 // --- 3. Componentes Ayudantes (para limpiar el código) ---
 
-// --- Componente de Tarjeta de Artículo (tu lógica de renderizado de app.js) ---
 function ArticleCard({ article }) {
     let infoFuente = <span>Fuente: {article.fuente}</span>;
     let flagHTML = null;
@@ -246,15 +246,16 @@ function ArticleCard({ article }) {
     }
     
     const imagenUrl = article.imagen || PLACEHOLDER_IMG;
-    
-    // --- ¡CAMBIO IMPORTANTE! ---
-    // La nueva URL será /articulo/[id]
-    // Usamos el _id del artículo de Mongo
     const articleUrl = `/articulo/${article._id}`; 
+
+    // --- ¡NUEVO! Icono de Play si el artículo tiene video ---
+    let playIcon = null;
+    if (article.videoUrl && article.videoProcessingStatus === 'complete') {
+        playIcon = <span className="article-card-play-icon"><i className="fas fa-play"></i></span>;
+    }
 
     return (
         <div className="article-card">
-            {/* Usamos 'legacyBehavior' para que el <a> funcione dentro del <Link> */}
             <Link href={articleUrl} legacyBehavior>
                 <a className="article-card-image-link">
                     <img 
@@ -264,6 +265,7 @@ function ArticleCard({ article }) {
                         onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
                     />
                     {flagHTML}
+                    {playIcon} {/* ¡Icono de Play añadido aquí! */}
                 </a>
             </Link>
             <div className="article-card-content">
@@ -280,7 +282,6 @@ function ArticleCard({ article }) {
     );
 }
 
-// --- Componente de Paginación (tu lógica de buildPagination de app.js) ---
 function Pagination({ paginaActual, totalPaginas, queryParams }) {
     if (totalPaginas <= 1) return null;
 

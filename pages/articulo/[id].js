@@ -1,4 +1,5 @@
 // Archivo: pages/articulo/[id].js
+// ¡MODIFICADO PARA MOSTRAR VIDEO!
 
 import Layout from '../../components/Layout';
 import Head from 'next/head';
@@ -6,7 +7,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 // --- Constantes ---
-const API_URL = 'https://lfaftechapi.onrender.com';
+// ¡CAMBIO AQUÍ! Ahora lee la variable de entorno
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lfaftechapi.onrender.com';
 const PLACEHOLDER_IMG_PATH = '/images/placeholder.jpg'; // Ruta local
 
 // --- 1. FUNCIÓN (Se ejecuta en el SERVIDOR) ---
@@ -60,22 +62,17 @@ export async function getStaticProps(context) {
 // --- 3. COMPONENTE DE LA PÁGINA ---
 export default function ArticuloPage({ article, recommended, canonicalUrl }) {
     
-    // --- ¡INICIO DE LA SOLUCIÓN! ---
-    // 1. Definimos la URL base de tu sitio
+    // --- Lógica de la imagen (miniatura) para SEO ---
+    // (Esto no cambia, las meta tags OG usan la miniatura)
     const BASE_URL = 'https://www.noticias.lat';
-    
-    // 2. Creamos la URL absoluta del placeholder
     const PLACEHOLDER_URL_ABSOLUTA = `${BASE_URL}${PLACEHOLDER_IMG_PATH}`;
-
-    // 3. Decidimos qué imagen usar
     const finalImageUrl = (article.imagen && article.imagen.startsWith('http'))
-        ? article.imagen  // Usar la imagen de la API (que ya es absoluta)
-        : PLACEHOLDER_URL_ABSOLUTA; // Usar el placeholder absoluto
-    // --- FIN DE LA SOLUCIÓN ---
+        ? article.imagen
+        : PLACEHOLDER_URL_ABSOLUTA;
     
     const descriptionSnippet = (article.descripcion || 'Sin descripción').substring(0, 150) + '...';
 
-    // Formatear el cuerpo del artículo
+    // Formatear el cuerpo del artículo (sin cambios)
     let contenidoPrincipalHTML = '';
     if (article.articuloGenerado) {
         const textoLimpio = article.articuloGenerado
@@ -99,7 +96,6 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
 
     const shareButtons = createShareButtons(canonicalUrl, article.titulo);
 
-    // Placeholder de anuncios
     const adSlot = (
         <div className="ad-slot-placeholder" style={{ minHeight: '100px', margin: '1.5rem 0' }}>
             <p>Publicidad</p>
@@ -119,7 +115,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                 <meta property="og:type" content="article" />
                 <meta property="og:url" content={canonicalUrl} />
                 
-                {/* --- ¡AQUÍ ESTÁ LA CORRECCIÓN APLICADA! --- */}
+                {/* La meta imagen SIEMPRE es la miniatura (para Google y redes) */}
                 <meta property="og:image" content={finalImageUrl} /> 
 
                 {/* Datos Estructurados (JSON-LD) */}
@@ -130,7 +126,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                             "@context": "https://schema.org",
                             "@type": "NewsArticle",
                             "headline": article.titulo,
-                            "image": [ finalImageUrl ], // Usamos la URL final
+                            "image": [ finalImageUrl ], // La miniatura
                             "datePublished": article.fecha,
                             "dateModified": article.updatedAt || article.fecha,
                             "author": [{"@type": "Organization", "name": "Noticias.lat"}],
@@ -142,7 +138,18 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                                     "url": `${BASE_URL}/favicon.png`
                                 }
                             },
-                            "description": descriptionSnippet
+                            "description": descriptionSnippet,
+                            // ¡AÑADIR INFO DE VIDEO SI EXISTE!
+                            ...(article.videoUrl && article.videoProcessingStatus === 'complete' && {
+                                "video": {
+                                    "@type": "VideoObject",
+                                    "name": article.titulo,
+                                    "description": descriptionSnippet,
+                                    "thumbnailUrl": finalImageUrl,
+                                    "uploadDate": article.updatedAt || article.fecha,
+                                    "contentUrl": article.videoUrl // URL del video de Ezoic
+                                }
+                            })
                         }),
                     }}
                 />
@@ -161,12 +168,37 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                     
                     {shareButtons}
                     
-                    <img 
-                        src={finalImageUrl} // Usamos la URL final aquí también
-                        alt={article.titulo} 
-                        className="article-main-image" 
-                        onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_URL_ABSOLUTA; }}
-                    />
+                    {/* --- ¡INICIO DEL CAMBIO! --- */}
+                    {/* Lógica para mostrar video o imagen */}
+                    <div className="article-media-container" style={{ position: 'relative', width: '100%', background: '#000', borderRadius: 'var(--radio-borde)', marginBottom: '2rem', overflow: 'hidden' }}>
+                        
+                        {/* CASO 1: El video está listo y existe */}
+                        {article.videoUrl && article.videoProcessingStatus === 'complete' ? (
+                            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                                {/* ¡IMPORTANTE! Aquí debes pegar el código
+                                    del reproductor de Ezoic, usando article.videoUrl */}
+                                <iframe 
+                                    src={article.videoUrl} 
+                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                    frameBorder="0" 
+                                    allow="autoplay; encrypted-media" 
+                                    allowFullScreen
+                                    title={article.titulo}
+                                ></iframe>
+                            </div>
+                        ) : (
+                            /* CASO 2: El video NO está (o está procesando), muestra la imagen */
+                            <img 
+                                src={finalImageUrl}
+                                alt={article.titulo} 
+                                className="article-main-image" 
+                                style={{ margin: 0, borderRadius: 0, width: '100%' }} // Resetea márgenes
+                                onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_URL_ABSOLUTA; }}
+                            />
+                        )}
+
+                    </div>
+                    {/* --- FIN DEL CAMBIO --- */}
 
                     <div 
                         className="article-body"
@@ -184,7 +216,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                     {adSlot}
                 </div>
 
-                {/* --- 6. Sección de Recomendados --- */}
+                {/* --- 6. Sección de Recomendados (Sin cambios) --- */}
                 {recommended.length > 0 && (
                     <section id="recommended-section" className="main-content" style={{ paddingTop: '1rem' }}>
                         <h2>Artículos Recomendados</h2>
@@ -220,6 +252,12 @@ function createShareButtons(url, title) {
 function RecommendedCard({ article }) {
     const imagenUrl = article.imagen || PLACEHOLDER_IMG_PATH; // Usar ruta relativa para <img>
     const articleUrl = `/articulo/${article._id}`;
+    
+    // Icono de Play para los recomendados
+    let playIcon = null;
+    if (article.videoUrl && article.videoProcessingStatus === 'complete') {
+        playIcon = <span className="article-card-play-icon mini"><i className="fas fa-play"></i></span>;
+    }
 
     return (
         <div className="article-card">
@@ -231,6 +269,7 @@ function RecommendedCard({ article }) {
                         loading="lazy" 
                         onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG_PATH; }}
                     />
+                    {playIcon}
                 </a>
             </Link>
             <div className="article-card-content">

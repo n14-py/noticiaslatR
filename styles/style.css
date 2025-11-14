@@ -366,6 +366,37 @@ img {
     font-weight: 600;
 }
 
+/* --- ¡NUEVO CSS PARA EL ICONO DE PLAY! --- */
+.article-card-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border: 2px solid #fff;
+    pointer-events: none; /* No interfiere con el click */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.article-card-play-icon.mini {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+}
+.article-card:hover .article-card-play-icon {
+    opacity: 1;
+}
+/* --- FIN DEL NUEVO CSS --- */
+
+
 .article-card-content {
     padding: 1.25rem;
     display: flex;

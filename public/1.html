@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Noticias.lat - Feed tipo TikTok</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      user-select: none;
+    }
+
+    .app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .app-header {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(0,0,0,0.55);
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+    }
+
+    .app-header img {
+      width: 27px;
+      height: 27px;
+      border-radius: 6px;
+    }
+
+    .app-header span {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .hint {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 1000;
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.55);
+      border-radius: 999px;
+      font-size: 11px;
+      opacity: 0.8;
+      backdrop-filter: blur(8px);
+    }
+
+    @media (max-width: 600px) {
+      .hint {
+        display: none;
+      }
+    }
+
+    .sound-btn {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      backdrop-filter: blur(3px);
+    }
+
+    .sound-btn-inner {
+      background: rgba(0,0,0,0.8);
+      padding: 24px 32px;
+      border-radius: 18px;
+      border: 2px solid rgba(255,255,255,0.2);
+      max-width: 80%;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    .sound-btn-inner span {
+      display: block;
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.35s ease-in-out;
+    }
+
+    .yt-holder {
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      right: 18px;
+      bottom: 140px;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .hud-item {
+      cursor: pointer;
+      text-align: center;
+      color: #fff;
+      user-select: none;
+    }
+
+    .hud-item img {
+      width: 40px;
+      filter: drop-shadow(0 0 6px #000);
+      margin-bottom: 3px;
+      transition: transform 0.15s ease;
+    }
+
+    .hud-item span {
+      display: block;
+      font-size: 13px;
+      text-shadow: 0 0 6px #000;
+    }
+
+    .hud-item.liked img {
+      transform: scale(1.25);
+      filter: drop-shadow(0 0 10px rgba(255,0,80,0.9));
+    }
+
+    @media (max-width: 600px) {
+      .hud-item img {
+        width: 34px;
+      }
+    }
+
+    .info {
+      position: absolute;
+      left: 14px;
+      bottom: 36px;
+      z-index: 900;
+      max-width: 74%;
+      font-size: 16px;
+      line-height: 1.35;
+      text-shadow: 0 0 6px #000;
+    }
+
+    .tag {
+      background: rgba(233,30,99,0.9);
+      padding: 2px 10px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .double-tap-heart {
+      position: fixed;
+      width: 110px;
+      height: 110px;
+      background: url("https://cdn-icons-png.flaticon.com/512/833/833472.png") no-repeat center center / contain;
+      opacity: 0;
+      transform: scale(0.4);
+      pointer-events: none;
+      animation: heart-pop 0.6s ease forwards;
+      z-index: 1500;
+    }
+
+    @keyframes heart-pop {
+      0% { transform: scale(0.4); opacity: 0; }
+      30% { transform: scale(1.1); opacity: 1; }
+      60% { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+
+    .modal {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      max-height: 45vh;
+      background: #111;
+      border-radius: 20px 20px 0 0;
+      display: none;
+      z-index: 2000;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal-close {
+      position: absolute;
+      right: 14px;
+      top: 10px;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="app-header">
+      <img src="https://www.noticias.lat/favicon.png" alt="Noticias.lat" />
+      <span>Noticias.lat</span>
+    </div>
+
+    <div class="hint">▲▼ Flechas / rueda / swipe para cambiar video</div>
+
+    <div id="soundButton" class="sound-btn">
+      <div class="sound-btn-inner">
+        <span>🔊</span>
+        Toca o haz clic para activar el sonido<br/>
+        Luego, todos los videos sonarán automáticamente
+      </div>
+    </div>
+
+    <div id="commentsModal" class="modal">
+      <div class="modal-close" onclick="closeComments()">✖</div>
+      <h3>Comentarios</h3>
+      <p>@usuario: Esto está brutal 😳</p>
+      <p>@latam: Feed estilo TikTok 🔥</p>
+      <p>@dev: Quiero esto en mi sitio también</p>
+    </div>
+
+    <div id="slides-wrapper">
+      <div class="slide" data-video="3RmOvxilbPM">
+        <div class="yt-holder" id="player-0"></div>
+
+        <div class="hud">
+          <div class="hud-item" onclick="like(this)">
+            <img src="https://cdn-icons-png.flaticon.com/512/833/833472.png" />
+            <span>12.3K</span>
+          </div>
+          <div class="hud-item" onclick="openComments()">
+            <img src="https://cdn-icons-png.flaticon.com/512/1380/1380338.png" />
+            <span>340</span>
+          </div>
+          <div class="hud-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/929/929610.png" />
+            <span>Compartir</span>
+          </div>
+        </div>
+
+        <div class="info">
+          <div class="tag">MrBeast</div>
+          Video #1 de prueba de anuncios globales.
+        </div>
+      </div>
+
+      <div class="slide" data-video="snX5YyflrGw">
+        <div class="yt-holder" id="player-1"></div>
+
+        <div class="hud">
+          <div class="hud-item" onclick="like(this)">
+            <img src="https://cdn-icons-png.flaticon.com/512/833/833472.png" />
+            <span>5.1K</span>
+          </div>
+          <div class="hud-item" onclick="openComments()">
+            <img src="https://cdn-icons-png.flaticon.com/512/1380/1380338.png" />
+            <span>120</span>
+          </div>
+          <div class="hud-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/929/929610.png" />
+            <span>Compartir</span>
+          </div>
+        </div>
+
+        <div class="info">
+          <div class="tag">MrBeast</div>
+          Video #2 · más probabilidad de anuncios.
+        </div>
+      </div>
+
+      <div class="slide" data-video="9RhWXPcKBI8">
+        <div class="yt-holder" id="player-2"></div>
+
+        <div class="hud">
+          <div class="hud-item" onclick="like(this)">
+            <img src="https://cdn-icons-png.flaticon.com/512/833/833472.png" />
+            <span>987</span>
+          </div>
+          <div class="hud-item" onclick="openComments()">
+            <img src="https://cdn-icons-png.flaticon.com/512/1380/1380338.png" />
+            <span>34</span>
+          </div>
+          <div class="hud-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/929/929610.png" />
+            <span>Compartir</span>
+          </div>
+        </div>
+
+        <div class="info">
+          <div class="tag">MrBeast</div>
+          Video #3 · anuncios variados.
+        </div>
+      </div>
+
+      <div class="slide" data-video="erLbbextvlY">
+        <div class="yt-holder" id="player-3"></div>
+
+        <div class="hud">
+          <div class="hud-item" onclick="like(this)">
+            <img src="https://cdn-icons-png.flaticon.com/512/833/833472.png" />
+            <span>1.4K</span>
+          </div>
+          <div class="hud-item" onclick="openComments()">
+            <img src="https://cdn-icons-png.flaticon.com/512/1380/1380338.png" />
+            <span>50</span>
+          </div>
+          <div class="hud-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/929/929610.png" />
+            <span>Compartir</span>
+          </div>
+        </div>
+
+        <div class="info">
+          <div class="tag">MrBeast</div>
+          Video #4 · pruebas finales.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <script>
+    let slides = [];
+    let players = [];
+    let playersReady = [];
+    let currentIndex = 0;
+    let isMoving = false;
+    let audioEnabled = false;
+    let wheelBuffer = 0;
+    let lastTapTime = 0;
+    let touchStartY = 0;
+
+    function positionSlides() {
+      slides.forEach((s, i) => {
+        const offset = (i - currentIndex) * 100;
+        s.style.transform = `translateY(${offset}vh)`;
+      });
+    }
+
+    function loadVideo() {
+      slides.forEach((slide, i) => {
+        const player = players[i];
+        if (!player || !playersReady[i]) return;
+
+        if (i === currentIndex) {
+          if (audioEnabled) {
+            player.unMute();
+          } else {
+            player.mute();
+          }
+          player.playVideo();
+        } else {
+          player.pauseVideo();
+        }
+      });
+    }
+
+    function onYouTubeIframeAPIReady() {
+      slides = Array.from(document.querySelectorAll(".slide"));
+      slides.forEach((slide, i) => {
+        const videoId = slide.dataset.video;
+        const holder = slide.querySelector(".yt-holder");
+        playersReady[i] = false;
+
+        players[i] = new YT.Player(holder.id, {
+          videoId: videoId,
+          playerVars: {
+            autoplay: i === 0 ? 1 : 0,
+            mute: 1,
+            controls: 0,
+            playsinline: 1,
+            rel: 0,
+            modestbranding: 1
+          },
+          events: {
+            onReady: (event) => {
+              playersReady[i] = true;
+              if (i !== currentIndex) {
+                event.target.pauseVideo();
+              }
+              if (i === 0) {
+                positionSlides();
+                loadVideo();
+              }
+            }
+          }
+        });
+      });
+    }
+
+    function goToSlide(idx) {
+      if (isMoving || slides.length === 0) return;
+      if (idx < 0) idx = slides.length - 1;
+      if (idx >= slides.length) idx = 0;
+
+      isMoving = true;
+      currentIndex = idx;
+      positionSlides();
+      loadVideo();
+
+      setTimeout(() => {
+        isMoving = false;
+      }, 380);
+    }
+
+    window.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      if (isMoving) return;
+
+      wheelBuffer += e.deltaY;
+      if (wheelBuffer > 60) {
+        goToSlide(currentIndex + 1);
+        wheelBuffer = 0;
+      } else if (wheelBuffer < -60) {
+        goToSlide(currentIndex - 1);
+        wheelBuffer = 0;
+      }
+    }, { passive: false });
+
+    window.addEventListener("keydown", (e) => {
+      if (isMoving) return;
+      if (e.key === "ArrowDown" || e.key === "PageDown") {
+        goToSlide(currentIndex + 1);
+      } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+        goToSlide(currentIndex - 1);
+      }
+    });
+
+    window.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener("touchend", (e) => {
+      const endY = e.changedTouches[0].clientY;
+      const diffY = touchStartY - endY;
+      const now = Date.now();
+      const dt = now - lastTapTime;
+
+      if (Math.abs(diffY) > 50) {
+        if (diffY > 0) {
+          goToSlide(currentIndex + 1);
+        } else {
+          goToSlide(currentIndex - 1);
+        }
+      } else {
+        if (dt < 300) {
+          const x = e.changedTouches[0].clientX;
+          const y = e.changedTouches[0].clientY;
+          showHeart(x, y);
+          const hudItem = slides[currentIndex].querySelector(".hud-item");
+          if (hudItem) like(hudItem);
+        }
+      }
+      lastTapTime = now;
+    }, { passive: true });
+
+    window.addEventListener("dblclick", (e) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      showHeart(x, y);
+      const hudItem = slides[currentIndex].querySelector(".hud-item");
+      if (hudItem) like(hudItem);
+    });
+
+    function like(el) {
+      const span = el.querySelector("span");
+      let val = parseInt(span.innerText.replace("K","000"));
+      if (isNaN(val)) val = 0;
+      val++;
+      span.innerText = val >= 1000 ? (val / 1000).toFixed(1) + "K" : val;
+      el.classList.add("liked");
+    }
+
+    function showHeart(x, y) {
+      const heart = document.createElement("div");
+      heart.className = "double-tap-heart";
+      heart.style.left = (x - 55) + "px";
+      heart.style.top = (y - 55) + "px";
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 600);
+    }
+
+    function openComments() {
+      document.getElementById("commentsModal").style.display = "block";
+    }
+
+    function closeComments() {
+      document.getElementById("commentsModal").style.display = "none";
+    }
+
+    window.openComments = openComments;
+    window.closeComments = closeComments;
+    window.like = like;
+
+    document.getElementById("soundButton").onclick = function () {
+      audioEnabled = true;
+      this.style.display = "none";
+
+      const currentPlayer = players[currentIndex];
+      if (currentPlayer && playersReady[currentIndex]) {
+        currentPlayer.unMute();
+        currentPlayer.playVideo();
+      }
+    };
+
+    window.addEventListener("DOMContentLoaded", () => {
+      slides = Array.from(document.querySelectorAll(".slide"));
+      positionSlides();
+    });
+  </script>
+</body>
+</html>

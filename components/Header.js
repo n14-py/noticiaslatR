@@ -21,6 +21,8 @@ export default function Header() {
     // usamos la ruta para marcar el enlace activo.
     if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
     if (router.pathname.startsWith('/contacto')) activeKey = 'contacto';
+    // --- ¡NUEVO! ---
+    if (router.pathname.startsWith('/feed')) activeKey = 'feed'; // Marcar el feed como activo
 
     // Función para añadir 'active' a la clase
     const getLinkClass = (key) => {
@@ -38,6 +40,13 @@ export default function Header() {
                     </Link>
                     
                     <ul className="nav-links desktop-menu">
+                        {/* --- ¡NUEVO BOTÓN FEED! --- */}
+                        <li>
+                            <Link href="/feed" className={getLinkClass('feed') + " feed-button"}>
+                                <i className="fas fa-video"></i> Feed
+                            </Link>
+                        </li>
+                        {/* --- FIN DE CAMBIO --- */}
                         <li><Link href="/?categoria=todos" className={getLinkClass('todos')} data-categoria="todos">General</Link></li>
                         <li><Link href="/?categoria=politica" className={getLinkClass('politica')} data-categoria="politica">Política</Link></li>
                         <li><Link href="/?categoria=economia" className={getLinkClass('economia')} data-categoria="economia">Economía</Link></li>
@@ -50,6 +59,7 @@ export default function Header() {
                         <li className="dropdown">
                             <a href="#" className="nav-link">Países <i className="fas fa-chevron-down"></i></a>
                             <ul className="dropdown-menu">
+                                {/* ... (links de países sin cambios) ... */}
                                 <li><Link href="/?pais=ar" className={getLinkClass('ar')} data-pais="ar">🇦🇷 Argentina</Link></li>
                                 <li><Link href="/?pais=bo" className={getLinkClass('bo')} data-pais="bo">🇧🇴 Bolivia</Link></li>
                                 <li><Link href="/?pais=br" className={getLinkClass('br')} data-pais="br">🇧🇷 Brasil</Link></li>
@@ -88,9 +98,17 @@ export default function Header() {
                     <button id="menu-close" className="menu-close" onClick={closeMenu}>&times;</button>
                 </div>
                 <div className="mobile-menu-content">
+                    {/* --- ¡NUEVO BOTÓN FEED! --- */}
+                    <Link href="/feed" className="nav-link feed-button" onClick={closeMenu}>
+                        <i className="fas fa-video"></i> Feed de Videos
+                    </Link>
+                    <hr />
+                    {/* --- FIN DE CAMBIO --- */}
+
                     {/* Al hacer clic en un enlace, cerramos el menú */}
                     <Link href="/?categoria=todos" className="nav-link" data-categoria="todos" onClick={closeMenu}>General</Link>
                     <Link href="/?categoria=politica" className="nav-link" data-categoria="politica" onClick={closeMenu}>Política</Link>
+                    {/* ... (links de categorías sin cambios) ... */}
                     <Link href="/?categoria=economia" className="nav-link" data-categoria="economia" onClick={closeMenu}>Economía</Link>
                     <Link href="/?categoria=deportes" className="nav-link" data-categoria="deportes" onClick={closeMenu}>Deportes</Link>
                     <Link href="/?categoria=tecnologia" className="nav-link" data-categoria="tecnologia" onClick={closeMenu}>Tecnología</Link>
@@ -102,6 +120,7 @@ export default function Header() {
                     
                     <Link href="/?pais=ar" className="nav-link" data-pais="ar" onClick={closeMenu}>🇦🇷 Argentina</Link>
                     <Link href="/?pais=bo" className="nav-link" data-pais="bo" onClick={closeMenu}>🇧🇴 Bolivia</Link>
+                    {/* ... (links de países sin cambios) ... */}
                     <Link href="/?pais=br" className="nav-link" data-pais="br" onClick={closeMenu}>🇧🇷 Brasil</Link>
                     <Link href="/?pais=cl" className="nav-link" data-pais="cl" onClick={closeMenu}>🇨🇱 Chile</Link>
                     <Link href="/?pais=co" className="nav-link" data-pais="co" onClick={closeMenu}>🇨🇴 Colombia</Link>

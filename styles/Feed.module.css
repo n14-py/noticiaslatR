@@ -1,0 +1,143 @@
+/*
+  Archivo: noticias-frontend-next/styles/Feed.module.css
+  Estilos para el feed de noticias tipo TikTok/1.html
+*/
+
+.feedContainer {
+  width: 100vw;
+  height: 100vh; /* Ocupa toda la altura de la ventana */
+  overflow: hidden;
+  background-color: #000;
+  position: relative;
+}
+
+.swiperContainer {
+  width: 100%;
+  height: 100%;
+}
+
+.slide {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Contenedor del video para mantener la relación de aspecto */
+.videoWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.youtubePlayer {
+  width: 100%;
+  height: 100%;
+  /* Esto asegura que el video cubra el contenedor, puede cortar bordes */
+  object-fit: cover; 
+}
+
+/* Capa de información sobre el video */
+.overlayInfo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  color: #fff;
+  pointer-events: none; /* Permite hacer clic "a través" de la capa */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* Alinea el texto abajo */
+  padding: 20px;
+  /* Gradiente para que el texto sea legible (como en 1.html) */
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 40%);
+}
+
+.videoDescription {
+  align-self: flex-start;
+  max-width: 90%;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+  pointer-events: all; /* El texto se puede seleccionar */
+}
+
+.videoDescription h4 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.videoDescription p {
+  margin: 5px 0 0;
+  font-size: 0.9rem;
+}
+
+/* Aquí puedes añadir los estilos para los botones de HUD (like, share)
+  si decides agregarlos en feed.js. 
+  Serían similares a los de 1.html
+*/
+
+/*
+  ================================================
+  --- ¡NUEVO! ---
+  Estilos para el botón de Play en las tarjetas
+  Añadir al final de /styles/style.css
+  ================================================
+*/
+
+/* 1. Hacemos que la tarjeta sea un punto de referencia */
+.article-card {
+  position: relative;
+  /* (El resto de tus estilos .article-card sigue igual) */
+}
+
+/* 2. Estilos del botón de "Play" */
+.article-card-play-icon {
+  /* Posicionamiento */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5; /* Por encima de la imagen pero debajo del contenido si se superpone */
+  
+  /* Apariencia */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 60px;
+  height: 60px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 24px;
+  
+  /* Transición */
+  transition: all 0.2s ease;
+  opacity: 0; /* Oculto por defecto */
+  
+  /* Para que el cursor sea un puntero */
+  cursor: pointer;
+}
+
+/* 3. Mostrar el botón al pasar el mouse sobre la tarjeta */
+.article-card:hover .article-card-play-icon {
+  opacity: 1;
+}
+
+/* 4. Efecto al pasar el mouse sobre el botón mismo */
+.article-card-play-icon:hover {
+  background-color: rgba(255, 0, 0, 0.8); /* Rojo YouTube */
+  transform: translate(-50%, -50%) scale(1.1); /* Ligeramente más grande */
+}
+
+/* 5. Asegurarnos de que el link de la imagen esté posicionado */
+.article-card-image-link {
+  position: relative; /* Necesario para el ícono de play */
+  display: block;
+  /* (El resto de tus estilos .article-card-image-link sigue igual) */
+}

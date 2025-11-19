@@ -230,7 +230,7 @@ export default function Home({ data, queryParams, error }) {
 
 // --- 3. Componentes Ayudantes (para limpiar el código) ---
 
-// --- Componente de Tarjeta de Artículo (tu lógica de renderizado de app.js) ---
+// --- Componente de Tarjeta de Artículo (¡MODIFICADO!) ---
 function ArticleCard({ article }) {
     let infoFuente = <span>Fuente: {article.fuente}</span>;
     let flagHTML = null;
@@ -247,14 +247,20 @@ function ArticleCard({ article }) {
     
     const imagenUrl = article.imagen || PLACEHOLDER_IMG;
     
-    // --- ¡CAMBIO IMPORTANTE! ---
-    // La nueva URL será /articulo/[id]
-    // Usamos el _id del artículo de Mongo
+    // --- ¡NUEVA LÓGICA! ---
+    // 1. Definimos si el video está listo
+    const videoEstaListo = (article.videoProcessingStatus === 'complete' && article.youtubeId);
+    
+    // 2. Definimos la URL de la noticia (siempre va al artículo)
     const articleUrl = `/articulo/${article._id}`; 
+    
+    // 3. Definimos la URL del FEED (solo si el video está listo)
+    const feedUrl = `/feed?start_id=${article._id}`;
 
     return (
         <div className="article-card">
-            {/* Usamos 'legacyBehavior' para que el <a> funcione dentro del <Link> */}
+            
+            {/* El <Link> principal ahora envuelve la imagen */}
             <Link href={articleUrl} legacyBehavior>
                 <a className="article-card-image-link">
                     <img 
@@ -264,8 +270,24 @@ function ArticleCard({ article }) {
                         onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
                     />
                     {flagHTML}
+
+                    {/* --- ¡AQUÍ ESTÁ EL BOTÓN DE PLAY! --- */}
+                    {/* Si el video está listo, mostramos este Link que va al Feed */}
+                    {videoEstaListo && (
+                        <Link href={feedUrl} legacyBehavior>
+                            <a className="article-card-play-button" 
+                               onClick={(e) => e.stopPropagation()} // Evita que el clic vaya al Link de fondo
+                            >
+                                <i className="fas fa-play"></i>
+                                Escuchar Noticia
+                            </a>
+                        </Link>
+                    )}
+                    {/* --- FIN DEL BOTÓN DE PLAY --- */}
+
                 </a>
             </Link>
+
             <div className="article-card-content">
                 <h3>
                     <Link href={articleUrl}>{article.titulo}</Link>
@@ -280,7 +302,7 @@ function ArticleCard({ article }) {
     );
 }
 
-// --- Componente de Paginación (tu lógica de buildPagination de app.js) ---
+// --- Componente de Paginación (sin cambios) ---
 function Pagination({ paginaActual, totalPaginas, queryParams }) {
     if (totalPaginas <= 1) return null;
 

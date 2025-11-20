@@ -3,6 +3,8 @@ import Layout from '../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+// Al final del archivo feed.js
+export const runtime = 'edge';
 
 // ¡Librerías que instalamos!
 import { Swiper, SwiperSlide } from 'swiper/react';

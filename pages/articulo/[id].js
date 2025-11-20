@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 // --- Configuración para Cloudflare (Edge) ---
 // Mantenla comentada mientras trabajas en local para evitar errores de estilos
-// export const runtime = 'experimental-edge';
+export const runtime = 'experimental-edge';
 
 // --- Constantes ---
 const API_URL = 'https://lfaftechapi.onrender.com';

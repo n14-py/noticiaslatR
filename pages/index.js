@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 // Configuración Edge
-//export const runtime = 'experimental-edge';
+export const runtime = 'experimental-edge';
 
 // --- Constantes ---
 const API_URL = 'https://lfaftechapi.onrender.com';

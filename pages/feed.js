@@ -5,7 +5,7 @@ import Script from 'next/script';
 import { useRouter } from 'next/router';
 
 // Configuración Edge
-//export const runtime = 'experimental-edge';
+export const runtime = 'experimental-edge';
 
 const API_URL = 'https://lfaftechapi.onrender.com';
 const SITIO = 'noticias.lat';

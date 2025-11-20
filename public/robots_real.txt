@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.noticias.lat/sitemap.xml
+Sitemap: https://www.noticias.lat/sitemap-video.xml

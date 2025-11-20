@@ -1119,3 +1119,104 @@ img {
     border-color: var(--color-primario);
     color: #fff;
 }
+
+
+
+/* ============================================= */
+/* --- 12. BOTÓN DE VIDEO EN ARTÍCULO (NUEVO) --- */
+/* ============================================= */
+
+.btn-video-feed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* Degradado moderno estilo TikTok/Instagram */
+    background: linear-gradient(45deg, #ff0050, #00f2ea); 
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 15px;
+    border-radius: var(--radio-borde);
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    margin-top: 1rem;
+}
+
+.btn-video-feed:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    color: white; /* Asegura que el texto siga blanco */
+}
+
+.btn-video-feed i {
+    font-size: 1.4rem;
+    margin-right: 12px;
+}
+
+
+/* ============================================= */
+/* --- NUEVOS BOTONES DE VIDEO EN ARTÍCULO --- */
+/* ============================================= */
+
+/* Botón de Play SUTIL y CENTRADO */
+.overlay-play-sutil {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px; /* Tamaño del botón */
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.25); /* Semi-transparente */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.2rem;
+    cursor: pointer;
+    z-index: 10;
+    backdrop-filter: blur(5px); /* Efecto difuminado */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.2s ease;
+}
+
+.overlay-play-sutil i {
+    margin-left: 5px; /* Ajuste óptico del triángulo */
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.overlay-play-sutil:hover {
+    background-color: rgba(255, 255, 255, 0.4); /* Más opaco al pasar el mouse */
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* Botón Prominente DEBAJO de la foto */
+.btn-noticias-lat-video {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #007bff, #0056b3); /* Color de noticias.lat */
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+    transition: all 0.3s ease;
+    gap: 10px;
+}
+
+.btn-noticias-lat-video:hover {
+    background: linear-gradient(135deg, #0056b3, #007bff);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+.btn-noticias-lat-video i {
+    font-size: 1.2rem;
+}

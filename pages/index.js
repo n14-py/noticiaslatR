@@ -2,16 +2,16 @@ import Layout from '../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState } from 'react'; // No necesitas 'useEffect' aquí
-// Al final del archivo index.js
-// Al final de index.js
-export const runtime = 'experimental-edge';
+import { useState } from 'react';
 
-// --- Constantes traídas de tu app.js ---
+// Configuración Edge
+//export const runtime = 'experimental-edge';
+
+// --- Constantes ---
 const API_URL = 'https://lfaftechapi.onrender.com';
 const SITIO = 'noticias.lat';
 const LIMITE_POR_PAGINA = 12;
-const PLACEHOLDER_IMG = '/images/placeholder.jpg'; // Ruta desde la carpeta /public
+const PLACEHOLDER_IMG = '/images/placeholder.jpg'; 
 
 const BANDERAS = {
     ar: '🇦🇷 Argentina', bo: '🇧🇴 Bolivia', br: '🇧🇷 Brasil',
@@ -34,22 +34,15 @@ const CATEGORIAS_TITULOS = {
     internacional: 'Mundo'
 };
 
-// --- 1. FUNCIÓN PRINCIPAL (Se ejecuta en el SERVIDOR) ---
+// --- 1. FUNCIÓN SERVER SIDE (Carga las noticias) ---
 export async function getServerSideProps(context) {
-    
-    // --- ¡LA LÍNEA MÁGICA PARA EL RENDIMIENTO! ---
-    // Le decimos a Vercel: "Guarda esta página por 60 segundos".
-    // 1000 usuarios = 1 sola llamada a tu API.
     context.res.setHeader(
         'Cache-Control',
         'public, s-maxage=1800, stale-while-revalidate=600'
     );
-    // ---------------------------------------------
 
-    // 1. Obtenemos los parámetros de la URL (ej: ?pais=ar&pagina=2)
     const { query, categoria, pais, pagina: pagina_raw } = context.query;
     
-    // 2. Limpiamos los parámetros
     const queryParams = {
         query: query || null,
         pais: pais || null,
@@ -57,37 +50,23 @@ export async function getServerSideProps(context) {
         pagina: parseInt(pagina_raw) || 1,
     };
 
-    // 3. Construimos la URL de la API (misma lógica que en tu app.js)
+    // Consulta a la API de ARTÍCULOS (Noticias normales)
     let url = `${API_URL}/api/articles?sitio=${SITIO}&limite=${LIMITE_POR_PAGINA}&pagina=${queryParams.pagina}`;
     
-    if (queryParams.query) {
-        url += `&query=${encodeURIComponent(queryParams.query)}`;
-    }
-    if (queryParams.pais) {
-        url += `&pais=${queryParams.pais}`;
-    }
+    if (queryParams.query) url += `&query=${encodeURIComponent(queryParams.query)}`;
+    if (queryParams.pais) url += `&pais=${queryParams.pais}`;
     if (queryParams.categoria && queryParams.categoria !== 'todos' && !queryParams.query && !queryParams.pais) {
         url += `&categoria=${queryParams.categoria}`;
     }
 
     try {
-        // 4. Llamamos a tu API en Render
         const res = await fetch(url);
-        if (!res.ok) {
-            throw new Error(`Error de API: ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error(`Error de API: ${res.statusText}`);
         const data = await res.json();
         
-        // 5. Devolvemos los datos y los queryParams como "props" a la página
-        return {
-            props: {
-                data, // Esto contendrá { totalArticulos, totalPaginas, paginaActual, articulos }
-                queryParams, // Esto contendrá { query, pais, categoria, pagina }
-            },
-        };
+        return { props: { data, queryParams } };
     } catch (error) {
         console.error("Error en getServerSideProps:", error.message);
-        // Si la API falla, devolvemos un estado de error
         return {
             props: {
                 data: { articulos: [], totalArticulos: 0, totalPaginas: 1, paginaActual: 1 },
@@ -98,127 +77,76 @@ export async function getServerSideProps(context) {
     }
 }
 
-
-// --- 2. COMPONENTE DE LA PÁGINA (Se ejecuta en el NAVEGADOR) ---
-// Recibe los "props" que devolvió getServerSideProps
+// --- 2. COMPONENTE DE PÁGINA (Visualización) ---
 export default function Home({ data, queryParams, error }) {
-
-    // --- Lógica para el título de la categoría (traída de tu app.js) ---
+    const router = useRouter();
+    const [searchTerm, setSearchTerm] = useState(queryParams.query || '');
+    
     let pageTitle = CATEGORIAS_TITULOS['todos'];
     let metaDescription = "Tu portal de noticias actualizado con la última información...";
     
     if (queryParams.query) {
         pageTitle = `Resultados para: "${queryParams.query}"`;
-        metaDescription = `Encuentra las últimas noticias sobre "${queryParams.query}" en Noticias.lat.`;
-        if (queryParams.pais && BANDERAS[queryParams.pais]) {
-            pageTitle += ` en ${BANDERAS[queryParams.pais]}`;
-        }
-    } else if (queryParams.pais) {
-        if (BANDERAS[queryParams.pais]) {
-            pageTitle = `Noticias de ${BANDERAS[queryParams.pais]}`;
-            metaDescription = `Mantente informado con las últimas noticias de ${BANDERAS[queryParams.pais]} en Noticias.lat.`;
-        }
-    } else if (queryParams.categoria) {
-        if (CATEGORIAS_TITULOS[queryParams.categoria]) {
-            pageTitle = CATEGORIAS_TITULOS[queryParams.categoria];
-            metaDescription = `Las noticias más recientes sobre ${pageTitle} en Latinoamérica.`;
-        }
+    } else if (queryParams.pais && BANDERAS[queryParams.pais]) {
+        pageTitle = `Noticias de ${BANDERAS[queryParams.pais]}`;
+    } else if (queryParams.categoria && CATEGORIAS_TITULOS[queryParams.categoria]) {
+        pageTitle = CATEGORIAS_TITULOS[queryParams.categoria];
     }
-
-    // --- Lógica del formulario de búsqueda (traída de tu app.js) ---
-    const router = useRouter();
-    // Iniciamos el estado con el 'queryParam' actual para que el input se llene
-    const [searchTerm, setSearchTerm] = useState(queryParams.query || '');
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
         const query = searchTerm.trim();
         if (!query) return;
-
         const newParams = new URLSearchParams();
         newParams.set('query', query);
-        
-        // Si ya estábamos en un país, mantenemos el filtro
-        // Usamos router.query porque queryParams puede ser de una carga anterior
-        if (router.query.pais) {
-            newParams.set('pais', router.query.pais);
-        }
-        
-        // Redirigimos usando el router de Next.js (esto dispara un nuevo getServerSideProps)
+        if (router.query.pais) newParams.set('pais', router.query.pais);
         router.push(`/?${newParams.toString()}`);
     };
 
     const clearSearch = () => {
         setSearchTerm('');
-        router.push('/'); // Vuelve a la página principal
+        router.push('/');
     };
-
 
     return (
         <Layout>
-            {/* --- 3. SEO Dinámico para esta página --- */}
             <Head>
                 <title>{pageTitle} - Noticias.lat</title>
                 <meta name="description" content={metaDescription} />
-                <meta property="og:title" content={`${pageTitle} - Noticias.lat`} />
-                <meta property="og:description" content={metaDescription} />
-                {/* La URL canónica la genera Next.js automáticamente */}
             </Head>
 
-            {/* --- 4. Contenido de la Página (tu index.html) --- */}
             <div className="container">
                 <div className="main-content">
-                    
-                    {/* --- Formulario de Búsqueda --- */}
+                    {/* Buscador */}
                     <form id="search-form" className="search-form" onSubmit={handleSearchSubmit}>
                         <input 
                             type="text" 
-                            id="search-input" 
-                            name="query" 
-                            placeholder="Buscar noticias, temas o países..." 
+                            placeholder="Buscar noticias..." 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             required 
                         />
-                        <button type="submit" id="search-button"><i className="fas fa-search"></i></button>
+                        <button type="submit"><i className="fas fa-search"></i></button>
                         {queryParams.query && (
-                            <button 
-                                type="button" 
-                                id="clear-search-button" 
-                                onClick={clearSearch}
-                                style={{ display: 'inline-block' }} // Mostramos el botón si hay un query
-                            >
+                            <button type="button" id="clear-search-button" onClick={clearSearch}>
                                 <i className="fas fa-times"></i>
                             </button>
                         )}
                     </form>
                     
-                    {/* --- Título de Categoría --- */}
                     <h2 id="category-title">{pageTitle}</h2>
                     
-                    {/* --- Contenedor de Artículos --- */}
+                    {/* Lista de Noticias */}
                     <div id="articles-container">
-                        {/* Si hay un error de API */}
-                        {error && (
-                            <div className="no-articles-message" style={{ color: 'red' }}>
-                                <p>{error}</p>
-                            </div>
-                        )}
-
-                        {/* Si no hay error, pero no hay artículos */}
+                        {error && <div className="no-articles-message" style={{color:'red'}}><p>{error}</p></div>}
                         {!error && data.articulos.length === 0 && (
-                            <div className="no-articles-message">
-                                <p>No se encontraron noticias en esta sección.</p>
-                            </div>
+                            <div className="no-articles-message"><p>No se encontraron noticias.</p></div>
                         )}
-
-                        {/* Si hay artículos, los mostramos */}
                         {!error && data.articulos.map(article => (
                             <ArticleCard key={article._id} article={article} />
                         ))}
                     </div>
                 
-                    {/* --- Paginación --- */}
                     <Pagination 
                         paginaActual={data.paginaActual} 
                         totalPaginas={data.totalPaginas} 
@@ -230,10 +158,7 @@ export default function Home({ data, queryParams, error }) {
     );
 }
 
-
-// --- 3. Componentes Ayudantes (para limpiar el código) ---
-
-// --- Componente de Tarjeta de Artículo (¡MODIFICADO!) ---
+// --- TARJETA DE NOTICIA (LIMPIA - SIN BOTÓN DE VIDEO) ---
 function ArticleCard({ article }) {
     let infoFuente = <span>Fuente: {article.fuente}</span>;
     let flagHTML = null;
@@ -249,21 +174,10 @@ function ArticleCard({ article }) {
     }
     
     const imagenUrl = article.imagen || PLACEHOLDER_IMG;
-    
-    // --- ¡NUEVA LÓGICA! ---
-    // 1. Definimos si el video está listo
-    const videoEstaListo = (article.videoProcessingStatus === 'complete' && article.youtubeId);
-    
-    // 2. Definimos la URL de la noticia (siempre va al artículo)
     const articleUrl = `/articulo/${article._id}`; 
-    
-    // 3. Definimos la URL del FEED (solo si el video está listo)
-    const feedUrl = `/feed?start_id=${article._id}`;
 
     return (
         <div className="article-card">
-            
-            {/* El <Link> principal ahora envuelve la imagen */}
             <Link href={articleUrl} legacyBehavior>
                 <a className="article-card-image-link">
                     <img 
@@ -273,28 +187,12 @@ function ArticleCard({ article }) {
                         onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
                     />
                     {flagHTML}
-
-                    {/* --- ¡AQUÍ ESTÁ EL BOTÓN DE PLAY! --- */}
-                    {/* Si el video está listo, mostramos este Link que va al Feed */}
-                    {videoEstaListo && (
-                        <Link href={feedUrl} legacyBehavior>
-                            <a className="article-card-play-button" 
-                               onClick={(e) => e.stopPropagation()} // Evita que el clic vaya al Link de fondo
-                            >
-                                <i className="fas fa-play"></i>
-                                Escuchar Noticia
-                            </a>
-                        </Link>
-                    )}
-                    {/* --- FIN DEL BOTÓN DE PLAY --- */}
-
+                    {/* ¡AQUÍ NO HAY BOTÓN! Solo imagen limpia */}
                 </a>
             </Link>
 
             <div className="article-card-content">
-                <h3>
-                    <Link href={articleUrl}>{article.titulo}</Link>
-                </h3>
+                <h3><Link href={articleUrl}>{article.titulo}</Link></h3>
                 {descripcionHTML}
                 <div className="article-card-footer">
                     {infoFuente}
@@ -305,16 +203,13 @@ function ArticleCard({ article }) {
     );
 }
 
-// --- Componente de Paginación (sin cambios) ---
+// --- Paginación ---
 function Pagination({ paginaActual, totalPaginas, queryParams }) {
     if (totalPaginas <= 1) return null;
-
     let queryString = '';
     if (queryParams.query) {
         queryString = `query=${encodeURIComponent(queryParams.query)}`;
-        if (queryParams.pais) {
-            queryString += `&pais=${queryParams.pais}`;
-        }
+        if (queryParams.pais) queryString += `&pais=${queryParams.pais}`;
     } else if (queryParams.pais) {
         queryString = `pais=${queryParams.pais}`;
     } else {
@@ -329,11 +224,8 @@ function Pagination({ paginaActual, totalPaginas, queryParams }) {
     const pages = [];
     if (startPage > 1) {
         pages.push(<Link key="1" href={`/?${queryString}&pagina=1`} className="page-link">1</Link>);
-        if (startPage > 2) {
-            pages.push(<span key="dots1" className="page-ellipsis">...</span>);
-        }
+        if (startPage > 2) pages.push(<span key="dots1" className="page-ellipsis">...</span>);
     }
-
     for (let i = startPage; i <= endPage; i++) {
         pages.push(
             <Link key={i} href={`/?${queryString}&pagina=${i}`} className={`page-link ${i === paginaActual ? 'active' : ''}`}>
@@ -341,33 +233,20 @@ function Pagination({ paginaActual, totalPaginas, queryParams }) {
             </Link>
         );
     }
-
     if (endPage < totalPaginas) {
-        if (endPage < totalPaginas - 1) {
-            pages.push(<span key="dots2" className="page-ellipsis">...</span>);
-        }
+        if (endPage < totalPaginas - 1) pages.push(<span key="dots2" className="page-ellipsis">...</span>);
         pages.push(<Link key={totalPaginas} href={`/?${queryString}&pagina=${totalPaginas}`} className="page-link">{totalPaginas}</Link>);
     }
 
     return (
-        <nav id="pagination-container" className="pagination-container" aria-label="Navegación de páginas">
+        <nav className="pagination-container">
             {paginaActual > 1 ? (
-                <Link href={`/?${queryString}&pagina=${paginaActual - 1}`} className="page-link" aria-label="Anterior">
-                    Anterior
-                </Link>
-            ) : (
-                <span className="page-link disabled" aria-disabled="true">Anterior</span>
-            )}
-            
+                <Link href={`/?${queryString}&pagina=${paginaActual - 1}`} className="page-link">Anterior</Link>
+            ) : <span className="page-link disabled">Anterior</span>}
             {pages}
-            
             {paginaActual < totalPaginas ? (
-                <Link href={`/?${queryString}&pagina=${paginaActual + 1}`} className="page-link" aria-label="Siguiente">
-                    Siguiente
-                </Link>
-            ) : (
-                <span className="page-link disabled" aria-disabled="true">Siguiente</span>
-            )}
+                <Link href={`/?${queryString}&pagina=${paginaActual + 1}`} className="page-link">Siguiente</Link>
+            ) : <span className="page-link disabled">Siguiente</span>}
         </nav>
     );
 }

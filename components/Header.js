@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 
 // Este es el componente Header
 export default function Header() {
-    // 1. LÓGICA PARA EL MENÚ MÓVIL (traída de tu app.js)
+    // 1. LÓGICA PARA EL MENÚ MÓVIL
     const [menuActivo, setMenuActivo] = useState(false);
 
     const closeMenu = () => {
@@ -17,8 +17,9 @@ export default function Header() {
 
     let activeKey = categoria || pais || 'todos';
     
-    // Si estamos en una página que no es 'index' (ej: sobre-nosotros), 
-    // usamos la ruta para marcar el enlace activo.
+    // Detectar si estamos en el feed
+    if (router.pathname === '/feed') activeKey = 'feed';
+    
     if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
     if (router.pathname.startsWith('/contacto')) activeKey = 'contacto';
 
@@ -32,12 +33,21 @@ export default function Header() {
             <header className="main-header">
                 <nav className="container">
                     
-                    {/* Usamos el componente Link de Next.js para enlaces internos */}
+                    {/* Logo */}
                     <Link href="/" className="logo">
                         Noticias.lat
                     </Link>
                     
                     <ul className="nav-links desktop-menu">
+                        
+                        {/* --- 1. ENLACE AL FEED (Escritorio: Solo texto azul, sin ícono) --- */}
+                        <li>
+                            <Link href="/feed" className={getLinkClass('feed')} style={{ color: '#007bff', fontWeight: '600' }}>
+                                Videos
+                            </Link>
+                        </li>
+                        {/* ------------------------------------------------------------------ */}
+
                         <li><Link href="/?categoria=todos" className={getLinkClass('todos')} data-categoria="todos">General</Link></li>
                         <li><Link href="/?categoria=politica" className={getLinkClass('politica')} data-categoria="politica">Política</Link></li>
                         <li><Link href="/?categoria=economia" className={getLinkClass('economia')} data-categoria="economia">Economía</Link></li>
@@ -88,6 +98,12 @@ export default function Header() {
                     <button id="menu-close" className="menu-close" onClick={closeMenu}>&times;</button>
                 </div>
                 <div className="mobile-menu-content">
+                    {/* Enlace al Feed destacado en móvil (Se mantiene con ícono) */}
+                    <Link href="/feed" className="nav-link" onClick={closeMenu} style={{ color: '#007bff', fontWeight: 'bold' }}>
+                         <i className="fas fa-play" style={{ marginRight: '5px' }}></i> Videos (Feed)
+                    </Link>
+                    <hr />
+
                     {/* Al hacer clic en un enlace, cerramos el menú */}
                     <Link href="/?categoria=todos" className="nav-link" data-categoria="todos" onClick={closeMenu}>General</Link>
                     <Link href="/?categoria=politica" className="nav-link" data-categoria="politica" onClick={closeMenu}>Política</Link>

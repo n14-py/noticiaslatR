@@ -10,6 +10,10 @@ const nextConfig = {
         destination: 'https://lfaftechapi.onrender.com/api/sitemap.xml',
       },
       {
+        source: '/sitemap-video.xml', // Fuente pública
+        destination: '/sitemap-video.xml', // Destino a tu archivo pages/sitemap-video.xml.js
+      },
+      {
         source: '/robots.txt',
         destination: '/robots_real.txt',
       }

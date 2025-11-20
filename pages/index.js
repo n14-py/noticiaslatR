@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react'; // No necesitas 'useEffect' aquí
 // Al final del archivo index.js
-export const runtime = 'edge';
+// Al final de index.js
+export const runtime = 'experimental-edge';
 
 // --- Constantes traídas de tu app.js ---
 const API_URL = 'https://lfaftechapi.onrender.com';

@@ -5,7 +5,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 // Al final del archivo articulo/[id].js
-export const runtime = 'edge';
+// Al final de articulo/[id].js
+export const runtime = 'experimental-edge';
 
 // --- Constantes ---
 const API_URL = 'https://lfaftechapi.onrender.com';

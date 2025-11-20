@@ -42,7 +42,7 @@ export async function getServerSideProps(context) {
     // 1000 usuarios = 1 sola llamada a tu API.
     context.res.setHeader(
         'Cache-Control',
-        'public, s-maxage=60, stale-while-revalidate=120'
+        'public, s-maxage=1800, stale-while-revalidate=600'
     );
     // ---------------------------------------------
 

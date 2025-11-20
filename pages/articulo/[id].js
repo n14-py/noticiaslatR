@@ -47,7 +47,7 @@ export async function getStaticProps(context) {
                 recommended,
                 canonicalUrl: `https://www.noticias.lat/articulo/${id}`
             },
-            revalidate: 3600 // Vuelve a generar la página cada 1 hora
+            revalidate: 86400 // Vuelve a generar la página cada 24 hora
         };
     } catch (error) {
         console.error("Error en getStaticProps (Artículo):", error.message);

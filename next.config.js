@@ -16,7 +16,7 @@ const nextConfig = {
     ];
   },
 
-  // --- ¡AQUÍ ESTÁ LA SOLUCIÓN! ---
+  // --- REDIRECCIONES (Mantienen tu SEO de la web anterior) ---
   async redirects() {
     return [
       // 1. Redirección para los artículos (de articulo.html?id=123 a /articulo/123)

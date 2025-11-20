@@ -2,6 +2,8 @@ const API_URL = 'https://lfaftechapi.onrender.com';
 const SITIO = 'noticias.lat';
 const BASE_URL = 'https://www.noticias.lat';
 
+export const runtime = 'experimental-edge';
+
 function generateSiteMap(articles) {
   return `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"

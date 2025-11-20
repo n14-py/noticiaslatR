@@ -3,32 +3,32 @@
 import Layout from '../../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-// Al final del archivo articulo/[id].js
-// Al final de articulo/[id].js
+
+// --- Configuración para Cloudflare (Edge) ---
 export const runtime = 'experimental-edge';
 
 // --- Constantes ---
 const API_URL = 'https://lfaftechapi.onrender.com';
-const PLACEHOLDER_IMG_PATH = '/images/placeholder.jpg'; // Ruta local
+const PLACEHOLDER_IMG_PATH = '/images/placeholder.jpg'; 
 
-// --- 1. FUNCIÓN (Se ejecuta en el SERVIDOR) ---
-export async function getStaticPaths() {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  };
-}
+// --- 1. FUNCIÓN (Se ejecuta en el SERVIDOR CADA VEZ, pero Cloudflare la guarda en caché) ---
+export async function getServerSideProps(context) {
+    // --- CACHÉ DE 24 HORAS ---
+    // Esto hace que la noticia se guarde en la memoria de Cloudflare por 1 día.
+    // 86400 segundos = 24 horas.
+    context.res.setHeader(
+        'Cache-Control',
+        'public, s-maxage=86400, stale-while-revalidate=3600'
+    );
 
-// --- 2. FUNCIÓN (Se ejecuta en el SERVIDOR) ---
-export async function getStaticProps(context) {
     const { id } = context.params;
     const articleUrl = `${API_URL}/api/article/${id}`;
     
     try {
         const res = await fetch(articleUrl);
         if (!res.ok) {
-            throw new Error('Artículo no encontrado');
+            // Si no existe, devolvemos un 404 real
+            return { notFound: true };
         }
         const article = await res.json();
 
@@ -49,36 +49,28 @@ export async function getStaticProps(context) {
                 article,
                 recommended,
                 canonicalUrl: `https://www.noticias.lat/articulo/${id}`
-            },
-            revalidate: 86400 // Vuelve a generar la página cada 24 hora
+            }
         };
     } catch (error) {
-        console.error("Error en getStaticProps (Artículo):", error.message);
+        console.error("Error en getServerSideProps (Artículo):", error.message);
         return {
-            notFound: true, // Muestra la página 404
+            notFound: true, 
         };
     }
 }
 
-// --- 3. COMPONENTE DE LA PÁGINA ---
+// --- 2. COMPONENTE DE LA PÁGINA ---
 export default function ArticuloPage({ article, recommended, canonicalUrl }) {
     
-    // --- ¡INICIO DE LA SOLUCIÓN! ---
-    // 1. Definimos la URL base de tu sitio
     const BASE_URL = 'https://www.noticias.lat';
-    
-    // 2. Creamos la URL absoluta del placeholder
     const PLACEHOLDER_URL_ABSOLUTA = `${BASE_URL}${PLACEHOLDER_IMG_PATH}`;
 
-    // 3. Decidimos qué imagen usar
     const finalImageUrl = (article.imagen && article.imagen.startsWith('http'))
-        ? article.imagen  // Usar la imagen de la API (que ya es absoluta)
-        : PLACEHOLDER_URL_ABSOLUTA; // Usar el placeholder absoluto
-    // --- FIN DE LA SOLUCIÓN ---
+        ? article.imagen 
+        : PLACEHOLDER_URL_ABSOLUTA;
     
     const descriptionSnippet = (article.descripcion || 'Sin descripción').substring(0, 150) + '...';
 
-    // Formatear el cuerpo del artículo
     let contenidoPrincipalHTML = '';
     if (article.articuloGenerado) {
         const textoLimpio = article.articuloGenerado
@@ -90,7 +82,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
         contenidoPrincipalHTML = textoLimpio
             .split('\n')
             .filter(p => p.trim() !== '') 
-            .map((p, index) => `<p>${p}</p>`)      
+            .map((p) => `<p>${p}</p>`)      
             .join('');                   
     } else {
         const contenidoLimpio = article.contenido ? article.contenido.split(' [')[0] : (article.descripcion || 'Contenido no disponible.');
@@ -101,8 +93,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
     }
 
     const shareButtons = createShareButtons(canonicalUrl, article.titulo);
-
-    // Placeholder de anuncios
+    
     const adSlot = (
         <div className="ad-slot-placeholder" style={{ minHeight: '100px', margin: '1.5rem 0' }}>
             <p>Publicidad</p>
@@ -111,7 +102,6 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
 
     return (
         <Layout>
-            {/* --- 4. SEO Dinámico --- */}
             <Head>
                 <title>{article.titulo} - Noticias.lat</title>
                 <meta name="description" content={descriptionSnippet} />
@@ -121,11 +111,8 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                 <meta property="og:description" content={descriptionSnippet} />
                 <meta property="og:type" content="article" />
                 <meta property="og:url" content={canonicalUrl} />
-                
-                {/* --- ¡AQUÍ ESTÁ LA CORRECCIÓN APLICADA! --- */}
                 <meta property="og:image" content={finalImageUrl} /> 
 
-                {/* Datos Estructurados (JSON-LD) */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -133,7 +120,7 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                             "@context": "https://schema.org",
                             "@type": "NewsArticle",
                             "headline": article.titulo,
-                            "image": [ finalImageUrl ], // Usamos la URL final
+                            "image": [ finalImageUrl ],
                             "datePublished": article.fecha,
                             "dateModified": article.updatedAt || article.fecha,
                             "author": [{"@type": "Organization", "name": "Noticias.lat"}],
@@ -151,43 +138,30 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
                 />
             </Head>
 
-            {/* --- 5. Contenido de la Página --- */}
             <div className="container">
                 <div id="article-content" className="article-page-container">
                     <h1>{article.titulo}</h1>
-                    
                     {adSlot}
-                    
                     <p className="article-meta">
                         Publicado el: {new Date(article.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} | Fuente: {article.fuente}
                     </p>
-                    
                     {shareButtons}
-                    
                     <img 
-                        src={finalImageUrl} // Usamos la URL final aquí también
+                        src={finalImageUrl} 
                         alt={article.titulo} 
                         className="article-main-image" 
                         onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_URL_ABSOLUTA; }}
                     />
-
-                    <div 
-                        className="article-body"
-                        dangerouslySetInnerHTML={{ __html: contenidoPrincipalHTML }}
-                    >
-                    </div>
-
+                    <div className="article-body" dangerouslySetInnerHTML={{ __html: contenidoPrincipalHTML }}></div>
                     <div className="article-source-link">
                         <p>Para leer la noticia en su publicación original, visite la fuente.</p>
                         <a href={article.enlaceOriginal} className="btn-primary" target="_blank" rel="noopener noreferrer">
                             Leer en {article.fuente}
                         </a>
                     </div>
-                    
                     {adSlot}
                 </div>
 
-                {/* --- 6. Sección de Recomendados --- */}
                 {recommended.length > 0 && (
                     <section id="recommended-section" className="main-content" style={{ paddingTop: '1rem' }}>
                         <h2>Artículos Recomendados</h2>
@@ -204,11 +178,9 @@ export default function ArticuloPage({ article, recommended, canonicalUrl }) {
 }
 
 // --- Componentes Ayudantes (Sin cambios) ---
-
 function createShareButtons(url, title) {
     const encodedUrl = encodeURIComponent(url);
     const encodedTitle = encodeURIComponent(title);
-
     return (
         <div className="share-buttons">
             <h4>Compartir esta noticia:</h4>
@@ -221,9 +193,9 @@ function createShareButtons(url, title) {
 }
 
 function RecommendedCard({ article }) {
-    const imagenUrl = article.imagen || PLACEHOLDER_IMG_PATH; // Usar ruta relativa para <img>
+    const PLACEHOLDER_IMG_PATH = '/images/placeholder.jpg';
+    const imagenUrl = article.imagen || PLACEHOLDER_IMG_PATH;
     const articleUrl = `/articulo/${article._id}`;
-
     return (
         <div className="article-card">
             <Link href={articleUrl} legacyBehavior>

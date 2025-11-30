@@ -1,52 +1,57 @@
-import Layout from '../components/Layout';
 import Head from 'next/head';
-import Link from 'next/link'; // Importamos Link para el enlace interno a /terminos
+import Layout from '../components/Layout';
 
 export default function Contacto() {
-  return (
-    <Layout>
-      <Head>
-        {/* SEO tags para esta página */}
-        <title>Contacto - Noticias.lat</title>
-        <meta name="description" content="¿Tienes alguna pregunta, sugerencia o quieres reportar un error? Contáctanos a través de nuestro email oficial." />
-        
-        {/* Metatags OG específicas */}
-        <meta property="og:title" content="Contacto - Noticias.lat" />
-        <meta property="og:url" content="https://www.noticias.lat/contacto" />
-        <meta property="og:description" content="¿Tienes alguna pregunta, sugerencia o quieres reportar un error? Contáctanos a través de nuestro email oficial." />
+    return (
+        <Layout>
+            <Head>
+                <title>Contacto - Noticias.lat</title>
+            </Head>
 
-        {/* Etiqueta Canónica */}
-        <link rel="canonical" href="https://www.noticias.lat/contacto" />
-      </Head>
+            <div className="container" style={{ maxWidth: '800px', margin: '4rem auto' }}>
+                <h1 style={{ 
+                    fontSize: '2.5rem', 
+                    color: 'var(--color-texto-titulos)', 
+                    textAlign: 'center', 
+                    marginBottom: '1rem' 
+                }}>
+                    Hablemos
+                </h1>
+                <p style={{ textAlign: 'center', fontSize: '1.1rem', color: '#64748b', marginBottom: '3rem' }}>
+                    ¿Tienes una noticia, una propuesta comercial o encontraste un error?
+                </p>
 
-      <div className="container">
-        {/* Contenido de tu archivo contacto.html original */}
-        <div className="static-page-container">
-            <h1>Contáctenos</h1>
-            <p>¿Tienes alguna pregunta, sugerencia o quieres reportar un error? Nos encantaría escucharte. Nuestro portal de noticias Noticias.lat es una plataforma de LFAF Tech.</p>
-            <p>Puedes contactarnos directamente a través de nuestro email oficial o seguirnos en nuestras redes sociales.</p>
-            
-            <h2>Información de Contacto</h2>
-            <ul>
-                {/* Enlaces externos (mailto:, https://) usan <a> */}
-                <li><strong>Email Oficial:</strong> <a href="mailto:contactonoticiaslat@gmail.com">contactonoticiaslat@gmail.com</a></li>
-                <li><strong>Instagram:</strong> <a href="https://www.instagram.com/noticias.lat" target="_blank" rel="noopener noreferrer">@noticias.lat</a></li>
-                <li><strong>TikTok:</strong> <a href="https://www.tiktok.com/@noticias.lat" target="_blank" rel="noopener noreferrer">@noticias.lat</a></li>
-            </ul>
-            
-            {/* El atributo 'style' en React debe ser un objeto.
-              Convertimos el style="..." a style={{...}}
-            */}
-            <p style={{ 
-                fontSize: '0.95rem', 
-                color: 'var(--color-texto-secundario)', 
-                marginTop: '2rem', 
-                lineHeight: '1.6' 
-            }}>
-              Para consultas sobre publicidad, alianzas o licencias de uso de contenido (basado en la política de <Link href="/terminos">Términos y Condiciones</Link>), por favor dirija su correo a nuestro Email Oficial.
-            </p>
-        </div>
-      </div>
-    </Layout>
-  );
+                <div style={{ 
+                    background: 'white', 
+                    padding: '3rem', 
+                    borderRadius: '12px', 
+                    boxShadow: 'var(--sombra-suave)',
+                    border: '1px solid var(--borde-sutil)'
+                }}>
+                    {/* Aquí podrías integrar un formulario real más adelante */}
+                    <div style={{ textAlign: 'center' }}>
+                        <i className="fas fa-envelope-open-text" style={{ fontSize: '3rem', color: 'var(--color-primario)', marginBottom: '1.5rem' }}></i>
+                        <h3 style={{ marginBottom: '1rem' }}>Envíanos un correo</h3>
+                        <p style={{ marginBottom: '2rem', lineHeight: '1.6' }}>
+                            Nuestro equipo de soporte y redacción (humana y virtual) revisa esta bandeja todos los días.
+                        </p>
+                        
+                        <a href="mailto:contactonoticiaslat@gmail.com" style={{ 
+                            display: 'inline-block',
+                            background: 'var(--color-primario)', 
+                            color: 'white', 
+                            padding: '15px 40px', 
+                            borderRadius: '50px', 
+                            fontWeight: '700',
+                            fontSize: '1.2rem',
+                            textDecoration: 'none',
+                            boxShadow: '0 4px 15px rgba(0, 102, 204, 0.4)'
+                        }}>
+                            contactonoticiaslat@gmail.com
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </Layout>
+    );
 }

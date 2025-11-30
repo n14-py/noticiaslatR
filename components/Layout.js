@@ -8,6 +8,33 @@ export default function Layout({ children }) {
   return (
     <>
       <Head>
+        {/* --- EZOIC INTEGRATION START (Paso 1) --- */}
+        {/* 1. Scripts de Privacidad (Deben ir PRIMERO para GDPR/Consentimiento) */}
+        <script 
+          src="https://cmp.gatekeeperconsent.com/min.js" 
+          data-cfasync="false"
+        ></script>
+        <script 
+          src="https://the.gatekeeperconsent.com/cmp.min.js" 
+          data-cfasync="false"
+        ></script>
+
+        {/* 2. Script de Encabezado Principal de Ezoic */}
+        <script 
+          async 
+          src="//www.ezojs.com/ezoic/sa.min.js"
+        ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.ezstandalone = window.ezstandalone || {};
+              ezstandalone.cmd = ezstandalone.cmd || [];
+            `,
+          }}
+        />
+        {/* --- EZOIC INTEGRATION END --- */}
+
+
         {/* Metatags de tu index.html original */}
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />

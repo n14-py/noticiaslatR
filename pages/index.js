@@ -4,6 +4,9 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 
+// Configuración Edge
+export const runtime = 'experimental-edge';
+
 // --- CONFIGURACIÓN ---
 const API_URL = 'https://lfaftechapi.onrender.com';
 const SITE_NAME = 'Noticias.lat';

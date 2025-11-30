@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 
+// Configuración Edge
+export const runtime = 'experimental-edge';
+
 // URL API
 const API_URL = 'https://lfaftechapi.onrender.com';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';

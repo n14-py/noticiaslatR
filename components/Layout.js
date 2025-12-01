@@ -8,6 +8,8 @@ export default function Layout({ children }) {
   return (
     <>
       <Head>
+
+        <script src="https://quge5.com/88/tag.min.js" data-zone="189545" async data-cfasync="false"></script>
         {/* --- EZOIC INTEGRATION START (Paso 1) --- */}
         {/* 1. Scripts de Privacidad (Deben ir PRIMERO para GDPR/Consentimiento) */}
         <script 

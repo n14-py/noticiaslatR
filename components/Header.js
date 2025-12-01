@@ -181,6 +181,18 @@ export default function Header() {
                         <div className="mobile-footer-links">
                             <Link href="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link>
                             <Link href="/contacto" onClick={closeMenu}>Contacto</Link>
+                            
+                            {/* --- MONETAG DIRECT LINK (AL FINAL DEL MENÚ MÓVIL) --- */}
+                            <a 
+                                href="https://otieu.com/4/10262890" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                onClick={closeMenu}
+                                style={{ color: 'var(--color-primario)', fontWeight: 'bold', border: '1px solid var(--color-primario)', padding: '5px 10px', borderRadius: '5px', textAlign: 'center' }}
+                            >
+                                ¡Ofertas Exclusivas!
+                            </a>
+                            {/* ---------------------------------------------------- */}
                         </div>
                     </div>
                 </div>

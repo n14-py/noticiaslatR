@@ -8,8 +8,6 @@ export default function Layout({ children }) {
   return (
     <>
       <Head>
-
-        <script src="https://quge5.com/88/tag.min.js" data-zone="189545" async data-cfasync="false"></script>
         {/* --- EZOIC INTEGRATION START (Paso 1) --- */}
         {/* 1. Scripts de Privacidad (Deben ir PRIMERO para GDPR/Consentimiento) */}
         <script 
@@ -24,7 +22,7 @@ export default function Layout({ children }) {
         {/* 2. Script de Encabezado Principal de Ezoic */}
         <script 
           async 
-          src="//www.ezojs.com/ezoic/sa.min.js"
+          src="//www.ezojs.com/ezojs/sa.min.js"
         ></script>
         <script
           dangerouslySetInnerHTML={{
@@ -69,7 +67,6 @@ export default function Layout({ children }) {
           src="https://www.googletagmanager.com/gtag/js?id=G-J80VTC4S5M"
         ></script>
         <script
-          // Usamos dangerouslySetInnerHTML para insertar el script que no es un archivo
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
@@ -79,6 +76,46 @@ export default function Layout({ children }) {
             `,
           }}
         />
+
+        {/* --- MONETAG GLOBAL SCRIPTS (SEGUROS) --- */}
+        
+        {/* 1. PUSH NOTIFICACIÓN */}
+        <script 
+            src="https://3nbf4.com/act/files/tag.min.js?z=10262866" 
+            data-cfasync="false" 
+            async
+        ></script>
+
+        {/* 2. IN-PAGE PUSH (Se auto-inyecta) */}
+        <script
+          data-cfasync="false"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(s){s.dataset.zone='10262884',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))
+            `,
+          }}
+        />
+
+        {/* 3. INTERSTITIAL (Se auto-inyecta) */}
+        <script
+          data-cfasync="false"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(s){s.dataset.zone='10262885',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))
+            `,
+          }}
+        />
+
+        {/* 4. VIGNETTE BANNER (Se auto-inyecta) */}
+        <script
+          data-cfasync="false"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(s){s.dataset.zone='10262887',s.src='https://gizokraijaw.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))
+            `,
+          }}
+        />
+        {/* --- MONETAG GLOBAL SCRIPTS END --- */}
       </Head>
 
       {/* Aquí se renderiza tu cabecera */}

@@ -1,0 +1,23 @@
+<script type="module" src="https://embed.deposits.hel.io/assets/index-v1.js" id="deposit-script"></script>
+
+<div id="deposit-container"></div>
+
+<script>
+  // Wait for the module script to load
+  document.getElementById('deposit-script').addEventListener('load', () => {
+    window.moonpayCommerceDeposit(
+      document.getElementById('deposit-container'),
+      {
+        depositCustomerToken: '[Paste in your customer deposit ID here, or create one on this page]',
+        network: 'main',
+        display: 'inline',
+        onSuccess: () => {
+          console.log('Deposit completed!');
+        },
+        onError: (error) => {
+          console.error('Deposit error:', error.message);
+        },
+      }
+    );
+  });
+</script>

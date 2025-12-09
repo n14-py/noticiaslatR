@@ -8,7 +8,7 @@ import Layout from '../../components/Layout';
 export const runtime = 'experimental-edge';
 
 // URL API
-const API_URL = 'https://lfaftechapi.onrender.com';
+const API_URL = 'https://lfaftechapi-7nrb.onrender.com';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
 // --- 1. SERVER SIDE PROPS ---

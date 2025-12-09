@@ -8,7 +8,7 @@ import Layout from '../components/Layout';
 export const runtime = 'experimental-edge';
 
 // --- CONFIGURACIÓN ---
-const API_URL = 'https://lfaftechapi.onrender.com';
+const API_URL = 'https://lfaftechapi-7nrb.onrender.com';
 const SITE_NAME = 'Noticias.lat';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 

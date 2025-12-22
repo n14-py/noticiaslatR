@@ -77,45 +77,7 @@ export default function Layout({ children }) {
           }}
         />
 
-        {/* --- MONETAG GLOBAL SCRIPTS (SEGUROS) --- */}
-        
-        {/* 1. PUSH NOTIFICACIÓN */}
-        <script 
-            src="https://3nbf4.com/act/files/tag.min.js?z=10262866" 
-            data-cfasync="false" 
-            async
-        ></script>
-
-        {/* 2. IN-PAGE PUSH (Se auto-inyecta) */}
-        <script
-          data-cfasync="false"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(s){s.dataset.zone='10262884',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))
-            `,
-          }}
-        />
-
-        {/* 3. INTERSTITIAL (Se auto-inyecta) */}
-        <script
-          data-cfasync="false"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(s){s.dataset.zone='10262885',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))
-            `,
-          }}
-        />
-
-        {/* 4. VIGNETTE BANNER (Se auto-inyecta) */}
-        <script
-          data-cfasync="false"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(s){s.dataset.zone='10262887',s.src='https://gizokraijaw.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))
-            `,
-          }}
-        />
-        {/* --- MONETAG GLOBAL SCRIPTS END --- */}
+       <script src="https://quge5.com/88/tag.min.js" data-zone="195157" async data-cfasync="false"></script>
       </Head>
 
       {/* Aquí se renderiza tu cabecera */}

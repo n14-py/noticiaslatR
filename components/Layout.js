@@ -1,94 +1,68 @@
 import Head from 'next/head';
+import Script from 'next/script'; // Importamos el componente optimizado
 import Header from './Header';
 import Footer from './Footer';
 
-// Este componente envuelve todas las páginas
-// {children} será el contenido de la página (ej: la lista de artículos)
 export default function Layout({ children }) {
   return (
     <>
       <Head>
-        {/* --- EZOIC INTEGRATION START (Paso 1) --- */}
-        {/* 1. Scripts de Privacidad (Deben ir PRIMERO para GDPR/Consentimiento) */}
-        <script 
-          src="https://cmp.gatekeeperconsent.com/min.js" 
-          data-cfasync="false"
-        ></script>
-        <script 
-          src="https://the.gatekeeperconsent.com/cmp.min.js" 
-          data-cfasync="false"
-        ></script>
-
-        {/* 2. Script de Encabezado Principal de Ezoic */}
-        <script 
-          async 
-          src="//www.ezojs.com/ezojs/sa.min.js"
-        ></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.ezstandalone = window.ezstandalone || {};
-              ezstandalone.cmd = ezstandalone.cmd || [];
-            `,
-          }}
-        />
-        {/* --- EZOIC INTEGRATION END --- */}
-
-
-        {/* Metatags de tu index.html original */}
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         
-        {/* Título y descripción por defecto (las páginas específicas pueden sobreescribirlos) */}
+        {/* Título y descripción por defecto */}
         <title>Noticias.lat - El portal de noticias de Latinoamérica</title>
         <meta name="description" content="Tu portal de noticias actualizado con la última información de la red LFAF Tech. Cobertura de todos los países de Latinoamérica." />
         
-        {/* Tags de Open Graph (para redes sociales) por defecto */}
+        {/* Open Graph */}
         <meta property="og:title" content="Noticias.lat - Lo Último de Latinoamérica" />
-        <meta property="og:description" content="Tu fuente de noticias actualizada con cobertura detallada de Argentina, México, Colombia, Chile, Perú y toda la región. La información más importante, al instante." />
+        <meta property="og:description" content="Tu fuente de noticias actualizada con cobertura detallada de Argentina, México, Colombia, Chile, Perú y toda la región." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.noticias.lat" />
         <meta property="og:image" content="https://www.noticias.lat/images/placeholder.jpg" />
         <meta property="og:site_name" content="Noticias.lat" />
         
-        {/* Favicon (lo pusimos en la carpeta /public) */}
         <link rel="icon" href="/favicon.png" type="image/png" />
-
-        {/* Google AdSense (de tu index.html) */}
-        <script 
-          async 
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696"
-          crossOrigin="anonymous"
-        ></script>
-        
-        {/* Google tag (gtag.js) (de tu index.html) */}
-        <script 
-          async 
-          src="https://www.googletagmanager.com/gtag/js?id=G-J80VTC4S5M"
-        ></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-J80VTC4S5M');
-            `,
-          }}
-        />
-
-       <script src="https://quge5.com/88/tag.min.js" data-zone="195157" async data-cfasync="false"></script>
       </Head>
 
-      {/* Aquí se renderiza tu cabecera */}
+      {/* --- SCRIPTS (Fuera de Head, usando Script) --- */}
+
+      {/* 1. Google AdSense */}
+      <Script 
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696"
+        crossOrigin="anonymous"
+        strategy="afterInteractive"
+      />
+
+      {/* 2. Google Analytics (GA4) */}
+      <Script 
+        src="https://www.googletagmanager.com/gtag/js?id=G-J80VTC4S5M"
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-J80VTC4S5M');
+        `}
+      </Script>
+
+      {/* 3. Monetag (Tu único ad network activo) */}
+      <Script 
+        src="https://quge5.com/88/tag.min.js" 
+        data-zone="195157" 
+        async 
+        data-cfasync="false"
+        strategy="afterInteractive"
+      />
+
       <Header />
 
-      {/* Aquí se renderiza el contenido de la página */}
       <main>
         {children}
       </main>
 
-      {/* Aquí se renderiza tu pie de página */}
       <Footer />
     </>
   );

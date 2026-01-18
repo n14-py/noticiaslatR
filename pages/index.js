@@ -12,7 +12,7 @@ const API_URL = 'https://lfaftechapi-7nrb.onrender.com';
 const SITE_NAME = 'Noticias.lat';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
-// --- 1. SERVER SIDE PROPS (Corregido para leer "articulos") ---
+// --- 1. SERVER SIDE PROPS ---
 export async function getServerSideProps(context) {
     context.res.setHeader(
         'Cache-Control',
@@ -23,7 +23,6 @@ export async function getServerSideProps(context) {
     const page = parseInt(query.page || '1', 10);
     const limit = 13; 
     
-    // Construir URL
     let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&page=${page}&limit=${limit}`;
     
     if (query.categoria && query.categoria !== 'todos') {
@@ -38,12 +37,9 @@ export async function getServerSideProps(context) {
         if (!res.ok) throw new Error('Error fetching articles');
         const data = await res.json();
 
-        // --- CORRECCIÓN CRÍTICA ---
-        // Tu backend envía "articulos" (español), así que debemos leer eso.
         let articles = [];
-        
         if (data.articulos && Array.isArray(data.articulos)) {
-            articles = data.articulos; // <--- AQUÍ ESTABA EL PROBLEMA
+            articles = data.articulos;
         } else if (data.articles && Array.isArray(data.articles)) {
             articles = data.articles;
         } else if (data.docs && Array.isArray(data.docs)) {
@@ -111,7 +107,8 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
     return (
         <Layout>
             <Head>
-                <title>{titleText} - {SITE_NAME}</title>
+                {/* CORREGIDO: Usamos template literals para un solo string */}
+                <title>{`${titleText} - ${SITE_NAME}`}</title>
                 <meta name="description" content={`Mantente informado con las últimas noticias de ${titleText} en Noticias.lat. Cobertura global y actualizaciones al minuto.`} />
                 <link rel="canonical" href={`https://www.noticias.lat${router.asPath.split('?')[0]}`} />
             </Head>

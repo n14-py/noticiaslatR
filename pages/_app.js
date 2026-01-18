@@ -1,22 +1,44 @@
-// Importamos tu archivo de estilos global
-import '../styles/style.css';
+import { useRef } from 'react';
+// Quitamos la importación de Head porque ya no la usamos aquí
+// import Head from 'next/head'; 
 
-// ¡Importante! Añadimos Font Awesome para tus íconos
-import Head from 'next/head';
+import '../styles/style.css';
+import { PlayerProvider, usePlayer } from '../context/PlayerContext';
+import PlayerBar from '../components/PlayerBar';
 
 function MyApp({ Component, pageProps }) {
+  const audioRef = useRef(null);
+
   return (
-    <>
-      <Head>
-        {/* Esto carga los íconos (fas fa-bars, fab fa-whatsapp, etc.) que usas en tu HTML original */}
-        <link 
-          rel="stylesheet" 
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" 
-        />
-      </Head>
+    <PlayerProvider>
+      {/* Ya no ponemos el <Head> aquí, lo moveremos a _document.js */}
+      
       <Component {...pageProps} />
-    </>
+      
+      <PlayerBar />
+      
+      <AudioInjector setAudioElement={(el) => audioRef.current = el} />
+    </PlayerProvider>
   );
+}
+
+function AudioInjector({ setAudioElement }) {
+    const { setAudioElement: setAudioInContext } = usePlayer();
+    
+    const audioRef = (node) => {
+        if (node) {
+            setAudioElement(node);
+            setAudioInContext(node);
+        }
+    };
+    
+    return (
+        <audio 
+          ref={audioRef} 
+          id="audio-player" 
+          preload="none"
+        />
+    );
 }
 
 export default MyApp;

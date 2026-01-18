@@ -13,8 +13,16 @@ export default function Header() {
         setPaisesOpen(false);
     };
 
+    // Lógica para saber qué botón del menú está activo (azul)
     let activeKey = categoria || pais || 'todos';
+    
+    // Si estamos en la página de videos
     if (router.pathname === '/feed') activeKey = 'feed';
+    
+    // --- NUEVO: Si estamos en cualquier página de radio (lista o detalle) ---
+    if (router.pathname.startsWith('/radio')) activeKey = 'radios';
+    
+    // Páginas estáticas
     if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
     if (router.pathname.startsWith('/contacto')) activeKey = 'contacto';
 
@@ -31,7 +39,6 @@ export default function Header() {
                     <span className="ticker-label">ÚLTIMA HORA</span>
                     <div className="ticker-text-wrapper">
                         <p className="ticker-text">
-                            {/* ELIMINADO: "Inteligencia Artificial narra..." */}
                             Cobertura global las 24 hs. • {fechaHoy} • Noticias actualizadas al minuto.
                         </p>
                     </div>
@@ -51,6 +58,13 @@ export default function Header() {
                         <li>
                             <Link href="/feed" className={`nav-link-video ${activeKey === 'feed' ? 'active' : ''}`}>
                                 <span className="pulse-icon">●</span> Video Feed
+                            </Link>
+                        </li>
+
+                        {/* --- NUEVO BOTÓN RADIOS (DESKTOP) --- */}
+                        <li>
+                            <Link href="/radios" className={getLinkClass('radios')}>
+                                <i className="fas fa-broadcast-tower"></i> Radios
                             </Link>
                         </li>
 
@@ -129,7 +143,14 @@ export default function Header() {
                     </Link>
 
                     <div className="mobile-links-list">
-                        <p className="mobile-section-title">Categorías</p>
+                        <p className="mobile-section-title">Secciones</p>
+                        
+                        {/* --- NUEVO BOTÓN RADIOS (MÓVIL) --- */}
+                        <Link href="/radios" onClick={closeMenu} className={activeKey === 'radios' ? 'active' : ''} style={{color: '#0066cc', fontWeight: '700'}}>
+                            <i className="fas fa-broadcast-tower" style={{marginRight: '8px'}}></i> Radios en Vivo
+                        </Link>
+
+                        <p className="mobile-section-title" style={{marginTop: '1rem'}}>Categorías</p>
                         <Link href="/?categoria=todos" onClick={closeMenu} className={activeKey === 'todos' ? 'active' : ''}>General</Link>
                         <Link href="/?categoria=politica" onClick={closeMenu} className={activeKey === 'politica' ? 'active' : ''}>Política</Link>
                         <Link href="/?categoria=economia" onClick={closeMenu} className={activeKey === 'economia' ? 'active' : ''}>Economía</Link>
@@ -181,8 +202,6 @@ export default function Header() {
                         <div className="mobile-footer-links">
                             <Link href="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link>
                             <Link href="/contacto" onClick={closeMenu}>Contacto</Link>
-                            
-
                         </div>
                     </div>
                 </div>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePlayer } from '../../context/PlayerContext';
 
 // --- CONFIGURACIÓN CLOUDFLARE ---
-export const runtime = process.env.NODE_ENV === 'development' ? 'nodejs' : 'experimental-edge';
+export const runtime = 'experimental-edge';
 
 const API_URL = 'https://lfaftechapi-7nrb.onrender.com/api';
 const PLACEHOLDER_LOGO = '/images/placeholder.jpg';

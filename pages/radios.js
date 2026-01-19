@@ -5,12 +5,26 @@ import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 
-// Configuración Edge
-export const runtime = 'experimental-edge';
+// --- CONFIGURACIÓN CLOUDFLARE ---
+export const runtime = process.env.NODE_ENV === 'development' ? 'nodejs' : 'experimental-edge';
 
 const API_URL = 'https://lfaftechapi-7nrb.onrender.com/api';
 const PLACEHOLDER_LOGO = '/images/placeholder.jpg'; 
 const LIMITE_POR_PAGINA = 24;
+
+// --- FILTROS RÁPIDOS (CONFIGURACIÓN) ---
+const QUICK_FILTERS = [
+    { label: 'Todas', code: null, icon: '🌎' },
+    { label: 'Noticias', genero: 'news', icon: '📰' },
+    { label: 'Música', genero: 'pop', icon: '🎵' },
+    { label: 'Argentina', pais: 'Argentina', icon: '🇦🇷' },
+    { label: 'México', pais: 'Mexico', icon: '🇲🇽' }, // Nota: API suele usar nombres en inglés o sin tilde a veces
+    { label: 'Colombia', pais: 'Colombia', icon: '🇨🇴' },
+    { label: 'Chile', pais: 'Chile', icon: '🇨🇱' },
+    { label: 'Perú', pais: 'Peru', icon: '🇵🇪' },
+    { label: 'España', pais: 'Spain', icon: '🇪🇸' },
+    { label: 'USA', pais: 'United States', icon: '🇺🇸' },
+];
 
 export async function getServerSideProps(context) {
     context.res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
@@ -68,31 +82,49 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
         e.preventDefault();
         const query = searchTerm.trim();
         if (!query) return;
-        const newParams = new URLSearchParams();
-        newParams.set('query', query);
-        newParams.set('pagina', '1');
-        router.push(`/radios?${newParams.toString()}`);
+        router.push(`/radios?query=${encodeURIComponent(query)}`);
     };
 
-    // CORRECCIÓN AQUÍ: Usamos template literals {`...`} dentro del title
+    // Función para manejar clicks en filtros
+    const handleFilterClick = (filter) => {
+        if (filter.code === null && !filter.genero && !filter.pais) {
+            router.push('/radios'); // Reset
+            return;
+        }
+        const params = new URLSearchParams();
+        if (filter.pais) params.set('pais', filter.pais);
+        if (filter.genero) params.set('genero', filter.genero);
+        router.push(`/radios?${params.toString()}`);
+    };
+
+    const isFilterActive = (filter) => {
+        if (filter.code === null && !queryParams.pais && !queryParams.genero) return true;
+        if (filter.pais && queryParams.pais === filter.pais) return true;
+        if (filter.genero && queryParams.genero === filter.genero) return true;
+        return false;
+    };
+
     return (
         <Layout>
             <Head>
                 <title>{`${tituloPagina} | Noticias.lat`}</title>
-                <meta name="description" content={`Escucha ${tituloPagina} gratis en Noticias.lat. Música, noticias y deportes en vivo.`} />
+                <meta name="description" content={`Escucha ${tituloPagina} gratis en Noticias.lat. Acceso instantáneo a miles de emisoras en vivo.`} />
             </Head>
 
             <div className="container main-content">
+                
+                {/* --- HEADER CON BUSCADOR --- */}
                 <div className="radio-page-header">
-                    <h1 className="article-title-main" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
+                    <h1 className="article-title-main" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
                         {tituloPagina}
                     </h1>
+                    <p style={{marginBottom: '1.5rem', color: '#64748b'}}>Toca cualquier emisora para escuchar al instante.</p>
                     
                     <form className="radio-search-container" onSubmit={handleSearchSubmit}>
                         <input 
                             type="text" 
                             className="radio-search-input"
-                            placeholder="Buscar emisora, país o género..." 
+                            placeholder="Buscar emisora (Ej: Radio Mitre, Los 40...)" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -100,19 +132,23 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
                             <i className="fas fa-search"></i>
                         </button>
                     </form>
-
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                        {['Argentina', 'México', 'Colombia', 'España', 'Noticias'].map(tag => (
-                            <Link href={`/radios?query=${tag}`} key={tag} className="tag" style={{ fontSize: '0.85rem' }}>
-                                {tag}
-                            </Link>
-                        ))}
-                        <Link href="/radios" className="tag" style={{ background: '#333', color: '#fff' }}>
-                            Ver Todas
-                        </Link>
-                    </div>
                 </div>
 
+                {/* --- BARRA DE FILTROS TIPO APP --- */}
+                <div className="filters-scroll-container">
+                    {QUICK_FILTERS.map((filter, index) => (
+                        <div 
+                            key={index} 
+                            className={`filter-chip ${isFilterActive(filter) ? 'active' : ''}`}
+                            onClick={() => handleFilterClick(filter)}
+                        >
+                            <span>{filter.icon}</span>
+                            {filter.label}
+                        </div>
+                    ))}
+                </div>
+
+                {/* --- GRID DE RADIOS --- */}
                 {error ? (
                     <div className="no-articles-message">{error}</div>
                 ) : data.radios.length === 0 ? (
@@ -135,34 +171,68 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
     );
 }
 
+// --- TARJETA INTELIGENTE (CLICK TO PLAY) ---
 function StationCard({ station }) {
     const { playStation, pauseStation, currentStation, isPlaying } = usePlayer();
-    const isActive = currentStation?.uuid === station.uuid;
-    const isThisPlaying = isActive && isPlaying;
+    
+    // ¿Está sonando esta radio exactamente?
+    const isThisStation = currentStation?.uuid === station.uuid;
+    const isThisPlaying = isThisStation && isPlaying;
 
-    const handlePlayClick = (e) => {
-        e.preventDefault(); 
-        if (isThisPlaying) pauseStation();
-        else playStation(station);
+    // Maneja el click en TODO el cuadro
+    const handleCardClick = () => {
+        if (isThisPlaying) {
+            pauseStation();
+        } else {
+            playStation(station);
+        }
+    };
+
+    // Maneja el click en el botón de info (evita que suene, solo navega)
+    const handleInfoClick = (e) => {
+        e.stopPropagation(); // Detiene que el click llegue al cuadro y le de Play
+        // El Link se encarga de navegar
     };
 
     return (
-        <div className={`station-card ${isThisPlaying ? 'playing' : ''}`}>
-            <div className="station-play-overlay" onClick={handlePlayClick}>
-                <i className={`fas ${isThisPlaying ? 'fa-pause' : 'fa-play'}`} style={{ color: 'white', fontSize: '2rem' }}></i>
-            </div>
+        <div 
+            className={`station-card ${isThisPlaying ? 'playing' : ''}`}
+            onClick={handleCardClick}
+            title="Toca para escuchar"
+        >
+            {/* Indicador visual si está sonando */}
+            {isThisPlaying && (
+                <div className="playing-indicator">
+                    <div className="bar-anim"></div>
+                    <div className="bar-anim"></div>
+                    <div className="bar-anim"></div>
+                </div>
+            )}
+
+            {/* Botón Flotante para ir a DETALLES/SEO */}
+            <Link 
+                href={`/radio/${station.uuid}`} 
+                className="station-info-btn"
+                onClick={handleInfoClick}
+                title="Ver detalles y descripción"
+            >
+                <i className="fas fa-info"></i>
+            </Link>
+
             <div className="station-logo-wrapper">
                 <img 
                     src={station.logo || PLACEHOLDER_LOGO} 
-                    alt={station.nombre}
+                    alt={`Escuchar ${station.nombre}`}
                     onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_LOGO; }}
                 />
             </div>
-            <Link href={`/radio/${station.uuid}`} className="station-title">
+            
+            {/* Quitamos el Link del título para que no confunda, ahora todo el card es click */}
+            <div className="station-title">
                 {station.nombre}
-            </Link>
+            </div>
+            
             <span className="station-location">
-                <i className="fas fa-map-marker-alt" style={{ marginRight: '5px', color: '#ef4444' }}></i>
                 {station.pais}
             </span>
         </div>
@@ -190,7 +260,7 @@ function Pagination({ paginaActual, totalPaginas, queryParams }) {
             <Link href={buildLink(prevPage)} className={`pagination-btn ${paginaActual === 1 ? 'disabled' : ''}`}>
                 &laquo; Anterior
             </Link>
-            <span className="page-info">Página {paginaActual} de {totalPaginas}</span>
+            <span className="page-info">Página {paginaActual}</span>
             <Link href={buildLink(nextPage)} className={`pagination-btn ${paginaActual === totalPaginas ? 'disabled' : ''}`}>
                 Siguiente &raquo;
             </Link>

@@ -2,32 +2,54 @@ import Layout from '../components/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 
-// --- CONFIGURACIÓN CLOUDFLARE ---
+// --- CONFIGURACIÓN CLOUDFLARE (Comentar con // en local si da error) ---
 export const runtime = 'experimental-edge';
 
 const API_URL = 'https://lfaftechapi-7nrb.onrender.com/api';
 const PLACEHOLDER_LOGO = '/images/placeholder.jpg'; 
-const LIMITE_POR_PAGINA = 24;
+const LIMITE_POR_PAGINA = 30; // Aumentamos un poco para ver más radios
 
-// --- FILTROS RÁPIDOS (CONFIGURACIÓN) ---
-const QUICK_FILTERS = [
-    { label: 'Todas', code: null, icon: '🌎' },
-    { label: 'Noticias', genero: 'news', icon: '📰' },
-    { label: 'Música', genero: 'pop', icon: '🎵' },
-    { label: 'Argentina', pais: 'Argentina', icon: '🇦🇷' },
-    { label: 'México', pais: 'Mexico', icon: '🇲🇽' }, // Nota: API suele usar nombres en inglés o sin tilde a veces
-    { label: 'Colombia', pais: 'Colombia', icon: '🇨🇴' },
-    { label: 'Chile', pais: 'Chile', icon: '🇨🇱' },
-    { label: 'Perú', pais: 'Peru', icon: '🇵🇪' },
-    { label: 'España', pais: 'Spain', icon: '🇪🇸' },
-    { label: 'USA', pais: 'United States', icon: '🇺🇸' },
+// --- LISTA COMPLETA DE PAÍSES Y FILTROS ---
+const COUNTRY_FILTERS = [
+    { label: '🌎 Todas', code: null },
+    { label: '🇦🇷 Argentina', pais: 'Argentina' },
+    { label: '🇧🇴 Bolivia', pais: 'Bolivia' },
+    { label: '🇧🇷 Brasil', pais: 'Brazil' },
+    { label: '🇨🇱 Chile', pais: 'Chile' },
+    { label: '🇨🇴 Colombia', pais: 'Colombia' },
+    { label: '🇨🇷 Costa Rica', pais: 'Costa Rica' },
+    { label: '🇨🇺 Cuba', pais: 'Cuba' },
+    { label: '🇪🇨 Ecuador', pais: 'Ecuador' },
+    { label: '🇸🇻 El Salvador', pais: 'El Salvador' },
+    { label: '🇪🇸 España', pais: 'Spain' },
+    { label: '🇬🇹 Guatemala', pais: 'Guatemala' },
+    { label: '🇭🇳 Honduras', pais: 'Honduras' },
+    { label: '🇲🇽 México', pais: 'Mexico' },
+    { label: '🇳🇮 Nicaragua', pais: 'Nicaragua' },
+    { label: '🇵🇦 Panamá', pais: 'Panama' },
+    { label: '🇵🇾 Paraguay', pais: 'Paraguay' },
+    { label: '🇵🇪 Perú', pais: 'Peru' },
+    { label: '🇩🇴 R. Dominicana', pais: 'Dominican Republic' },
+    { label: '🇺🇾 Uruguay', pais: 'Uruguay' },
+    { label: '🇺🇸 USA', pais: 'United States' },
+    { label: '🇻🇪 Venezuela', pais: 'Venezuela' }
+];
+
+const GENRE_FILTERS = [
+    { label: '📰 Noticias', genero: 'news' },
+    { label: '🎵 Música', genero: 'pop' },
+    { label: '⚽ Deportes', genero: 'sports' },
+    { label: '✝️ Cristiana', genero: 'christian' },
+    { label: '🎸 Rock', genero: 'rock' },
+    { label: '💃 Latina', genero: 'latin' },
 ];
 
 export async function getServerSideProps(context) {
-    context.res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    // Cache para velocidad en Cloudflare
+    context.res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
     const { query, pais, genero, pagina: pagina_raw } = context.query;
     
@@ -45,8 +67,11 @@ export async function getServerSideProps(context) {
         url += `&query=${encodeURIComponent(queryParams.query)}`;
         tituloPagina = `Resultados: "${queryParams.query}"`;
     } else if (queryParams.pais) {
-        url += `&pais=${queryParams.pais}`;
-        tituloPagina = `Emisoras de ${queryParams.pais}`;
+        // Buscamos el emoji para el título
+        const paisObj = COUNTRY_FILTERS.find(p => p.pais === queryParams.pais);
+        const emoji = paisObj ? paisObj.label.split(' ')[0] : '📻';
+        url += `&pais=${encodeURIComponent(queryParams.pais)}`;
+        tituloPagina = `${emoji} Radios de ${queryParams.pais}`;
     } else if (queryParams.genero) {
         url += `&genero=${encodeURIComponent(queryParams.genero)}`;
         tituloPagina = `Género: ${queryParams.genero}`;
@@ -56,10 +81,6 @@ export async function getServerSideProps(context) {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Error API`);
         const data = await res.json();
-        
-        if (queryParams.pais && data.radios.length > 0 && !queryParams.query) {
-            tituloPagina = `Radios de ${data.radios[0].pais}`;
-        }
         
         return { props: { data, queryParams, tituloPagina } };
     } catch (error) {
@@ -77,6 +98,7 @@ export async function getServerSideProps(context) {
 export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState(queryParams.query || '');
+    const scrollRef = useRef(null);
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
@@ -85,22 +107,26 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
         router.push(`/radios?query=${encodeURIComponent(query)}`);
     };
 
-    // Función para manejar clicks en filtros
-    const handleFilterClick = (filter) => {
-        if (filter.code === null && !filter.genero && !filter.pais) {
-            router.push('/radios'); // Reset
+    const handleFilterClick = (type, value) => {
+        const params = new URLSearchParams();
+        
+        // Si es "Todas", limpiamos
+        if (value === null) {
+            router.push('/radios');
             return;
         }
-        const params = new URLSearchParams();
-        if (filter.pais) params.set('pais', filter.pais);
-        if (filter.genero) params.set('genero', filter.genero);
+
+        if (type === 'pais') params.set('pais', value);
+        if (type === 'genero') params.set('genero', value);
+        
         router.push(`/radios?${params.toString()}`);
     };
 
-    const isFilterActive = (filter) => {
-        if (filter.code === null && !queryParams.pais && !queryParams.genero) return true;
-        if (filter.pais && queryParams.pais === filter.pais) return true;
-        if (filter.genero && queryParams.genero === filter.genero) return true;
+    // Verificar si un filtro está activo
+    const isActive = (type, value) => {
+        if (value === null && !queryParams.pais && !queryParams.genero) return true;
+        if (type === 'pais' && queryParams.pais === value) return true;
+        if (type === 'genero' && queryParams.genero === value) return true;
         return false;
     };
 
@@ -108,23 +134,25 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
         <Layout>
             <Head>
                 <title>{`${tituloPagina} | Noticias.lat`}</title>
-                <meta name="description" content={`Escucha ${tituloPagina} gratis en Noticias.lat. Acceso instantáneo a miles de emisoras en vivo.`} />
+                <meta name="description" content={`Escucha ${tituloPagina} gratis en Noticias.lat. Acceso instantáneo a miles de emisoras en vivo de toda Latinoamérica.`} />
             </Head>
 
             <div className="container main-content">
                 
                 {/* --- HEADER CON BUSCADOR --- */}
                 <div className="radio-page-header">
-                    <h1 className="article-title-main" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                    <h1 className="article-title-main" style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>
                         {tituloPagina}
                     </h1>
-                    <p style={{marginBottom: '1.5rem', color: '#64748b'}}>Toca cualquier emisora para escuchar al instante.</p>
+                    <p style={{marginBottom: '2rem', color: '#64748b', fontSize: '1.1rem'}}>
+                        Explora miles de estaciones en vivo. Música, noticias y deportes.
+                    </p>
                     
                     <form className="radio-search-container" onSubmit={handleSearchSubmit}>
                         <input 
                             type="text" 
                             className="radio-search-input"
-                            placeholder="Buscar emisora (Ej: Radio Mitre, Los 40...)" 
+                            placeholder="Buscar emisora (Ej: Disney, Mitre, Los 40...)" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -134,25 +162,54 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
                     </form>
                 </div>
 
-                {/* --- BARRA DE FILTROS TIPO APP --- */}
-                <div className="filters-scroll-container">
-                    {QUICK_FILTERS.map((filter, index) => (
-                        <div 
-                            key={index} 
-                            className={`filter-chip ${isFilterActive(filter) ? 'active' : ''}`}
-                            onClick={() => handleFilterClick(filter)}
-                        >
-                            <span>{filter.icon}</span>
-                            {filter.label}
-                        </div>
-                    ))}
+                {/* --- FILTROS DE PAÍSES (SCROLL HORIZONTAL) --- */}
+                <div style={{ marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '10px', fontWeight: '700', letterSpacing: '1px' }}>
+                        Filtrar por País
+                    </h3>
+                    <div className="filters-scroll-container" ref={scrollRef}>
+                        {COUNTRY_FILTERS.map((filter, index) => (
+                            <div 
+                                key={index} 
+                                className={`filter-chip ${isActive('pais', filter.pais || filter.code) ? 'active' : ''}`}
+                                onClick={() => handleFilterClick('pais', filter.pais || filter.code)}
+                            >
+                                {filter.label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* --- FILTROS DE GÉNEROS (SCROLL HORIZONTAL) --- */}
+                <div style={{ marginBottom: '2.5rem' }}>
+                    <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '10px', fontWeight: '700', letterSpacing: '1px' }}>
+                        Categorías Populares
+                    </h3>
+                    <div className="filters-scroll-container">
+                        {GENRE_FILTERS.map((filter, index) => (
+                            <div 
+                                key={index} 
+                                className={`filter-chip ${isActive('genero', filter.genero) ? 'active' : ''}`}
+                                onClick={() => handleFilterClick('genero', filter.genero)}
+                            >
+                                {filter.label}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 {/* --- GRID DE RADIOS --- */}
                 {error ? (
                     <div className="no-articles-message">{error}</div>
                 ) : data.radios.length === 0 ? (
-                    <div className="no-articles-message">No encontramos radios con ese criterio.</div>
+                    <div className="no-articles-message">
+                        <i className="fas fa-broadcast-tower" style={{ fontSize: '3rem', color: '#cbd5e1', marginBottom: '1rem' }}></i>
+                        <h3>No encontramos radios</h3>
+                        <p>Intenta seleccionar otro país o busca con otro término.</p>
+                        <button onClick={() => router.push('/radios')} className="pagination-btn" style={{marginTop: '1rem'}}>
+                            Ver todas las radios
+                        </button>
+                    </div>
                 ) : (
                     <div className="stations-grid">
                         {data.radios.map(station => (
@@ -175,11 +232,10 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
 function StationCard({ station }) {
     const { playStation, pauseStation, currentStation, isPlaying } = usePlayer();
     
-    // ¿Está sonando esta radio exactamente?
+    // Verificamos por UUID
     const isThisStation = currentStation?.uuid === station.uuid;
     const isThisPlaying = isThisStation && isPlaying;
 
-    // Maneja el click en TODO el cuadro
     const handleCardClick = () => {
         if (isThisPlaying) {
             pauseStation();
@@ -188,19 +244,16 @@ function StationCard({ station }) {
         }
     };
 
-    // Maneja el click en el botón de info (evita que suene, solo navega)
     const handleInfoClick = (e) => {
-        e.stopPropagation(); // Detiene que el click llegue al cuadro y le de Play
-        // El Link se encarga de navegar
+        e.stopPropagation();
     };
 
     return (
         <div 
             className={`station-card ${isThisPlaying ? 'playing' : ''}`}
             onClick={handleCardClick}
-            title="Toca para escuchar"
+            title={`Escuchar ${station.nombre}`}
         >
-            {/* Indicador visual si está sonando */}
             {isThisPlaying && (
                 <div className="playing-indicator">
                     <div className="bar-anim"></div>
@@ -209,12 +262,11 @@ function StationCard({ station }) {
                 </div>
             )}
 
-            {/* Botón Flotante para ir a DETALLES/SEO */}
             <Link 
                 href={`/radio/${station.uuid}`} 
                 className="station-info-btn"
                 onClick={handleInfoClick}
-                title="Ver detalles y descripción"
+                title="Ver detalles"
             >
                 <i className="fas fa-info"></i>
             </Link>
@@ -222,14 +274,14 @@ function StationCard({ station }) {
             <div className="station-logo-wrapper">
                 <img 
                     src={station.logo || PLACEHOLDER_LOGO} 
-                    alt={`Escuchar ${station.nombre}`}
+                    alt={station.nombre}
+                    loading="lazy"
                     onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_LOGO; }}
                 />
             </div>
             
-            {/* Quitamos el Link del título para que no confunda, ahora todo el card es click */}
             <div className="station-title">
-                {station.nombre}
+                {station.nombre.trim()}
             </div>
             
             <span className="station-location">
@@ -257,13 +309,19 @@ function Pagination({ paginaActual, totalPaginas, queryParams }) {
 
     return (
         <div className="pagination-container">
-            <Link href={buildLink(prevPage)} className={`pagination-btn ${paginaActual === 1 ? 'disabled' : ''}`}>
-                &laquo; Anterior
-            </Link>
-            <span className="page-info">Página {paginaActual}</span>
-            <Link href={buildLink(nextPage)} className={`pagination-btn ${paginaActual === totalPaginas ? 'disabled' : ''}`}>
-                Siguiente &raquo;
-            </Link>
+            {paginaActual > 1 && (
+                <Link href={buildLink(prevPage)} className="pagination-btn">
+                    &laquo; Anterior
+                </Link>
+            )}
+            
+            <span className="page-info">Página {paginaActual} de {totalPaginas}</span>
+            
+            {paginaActual < totalPaginas && (
+                <Link href={buildLink(nextPage)} className="pagination-btn">
+                    Siguiente &raquo;
+                </Link>
+            )}
         </div>
     );
 }

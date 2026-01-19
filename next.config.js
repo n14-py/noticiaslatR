@@ -1,18 +1,51 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  // --- IMÁGENES ---
+  // Vital para que carguen las fotos de las noticias y logos de radios
+  images: {
+    domains: [
+      'pbs.twimg.com', 
+      'via.placeholder.com', 
+      'i.ytimg.com', 
+      'lh3.googleusercontent.com',
+      'cdn-profiles.tunein.com',
+      'logo.clearbit.com'
+    ],
+    // Esto permite cargar imágenes de CUALQUIER dominio (necesario para un agregador de noticias)
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+    ],
+  },
   
-  // Tu sitemap (ya lo teníamos)
+  // --- REWRITES (LA MAGIA DE LOS SITEMAPS) ---
+  // Esto conecta tu dominio frontend con los sitemaps de la API
   async rewrites() {
     return [
+      // 1. Índice Principal
       {
         source: '/sitemap.xml',
         destination: 'https://lfaftechapi-7nrb.onrender.com/api/sitemap.xml',
       },
+      // 2. Sitemap Estático
       {
-        source: '/sitemap-video.xml', // Fuente pública
-        destination: '/sitemap-video.xml', // Destino a tu archivo pages/sitemap-video.xml.js
+        source: '/sitemap-static.xml',
+        destination: 'https://lfaftechapi-7nrb.onrender.com/api/sitemap-static.xml',
       },
+      // 3. Sitemaps Dinámicos de Noticias (Paginados: 1, 2, 3...)
+      {
+        source: '/sitemap-noticias-:page.xml',
+        destination: 'https://lfaftechapi-7nrb.onrender.com/api/sitemap-noticias-:page.xml',
+      },
+      // 4. Robots.txt real
       {
         source: '/robots.txt',
         destination: '/robots_real.txt',
@@ -20,17 +53,18 @@ const nextConfig = {
     ];
   },
 
-  // --- REDIRECCIONES (Mantienen tu SEO de la web anterior) ---
+  // --- REDIRECCIONES (SEO LEGADO) ---
+  // Mantienen el posicionamiento de tu web antigua redirigiendo .html a rutas limpias
   async redirects() {
     return [
-      // 1. Redirección para los artículos (de articulo.html?id=123 a /articulo/123)
+      // Artículos (de articulo.html?id=123 a /articulo/123)
       {
-        source: '/articulo.html', // La página vieja
-        has: [ { type: 'query', key: 'id' } ], // SI TIENE el parámetro ?id=
-        destination: '/articulo/:id', // Redirige a la nueva ruta
-        permanent: true, // ¡Esto es un 301! (Aviso permanente a Google)
+        source: '/articulo.html',
+        has: [ { type: 'query', key: 'id' } ],
+        destination: '/articulo/:id',
+        permanent: true, // 301 Permanent Redirect
       },
-      // 2. Redirección para las páginas estáticas (de .html a la ruta limpia)
+      // Páginas estáticas
       {
         source: '/sobre-nosotros.html',
         destination: '/sobre-nosotros',

@@ -48,14 +48,7 @@ export default function Layout({ children }) {
         `}
       </Script>
 
-      {/* 3. Monetag (Tu único ad network activo) */}
-      <Script 
-        src="https://quge5.com/88/tag.min.js" 
-        data-zone="195157" 
-        async 
-        data-cfasync="false"
-        strategy="afterInteractive"
-      />
+
 
       <Header />
 

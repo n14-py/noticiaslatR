@@ -5,33 +5,22 @@ import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lfaftechapi-7nrb.onrender.com/api';
 
 function MiembrosDashboard() {
-  // Estados de Usuario y Autenticación
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Navegación del Panel
-  const [activeTab, setActiveTab] = useState('estudio'); // 'estudio' | 'historial'
-  
-  // Estados de Datos
+  const [activeTab, setActiveTab] = useState('estudio');
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   
-  // Estados del Formulario de Publicación
   const [publishing, setPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState({ type: '', text: '' });
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    videoType: 'short',
-    image: null
-  });
+  const [formData, setFormData] = useState({ title: '', content: '', videoType: 'short', image: null });
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Cargar sesión guardada al iniciar
   useEffect(() => {
     const savedUser = localStorage.getItem('lfaf_member');
     if (savedUser) {
@@ -41,7 +30,6 @@ function MiembrosDashboard() {
     }
   }, []);
 
-  // Función para obtener el historial de publicaciones del backend
   const fetchHistory = async (googleId) => {
     setLoadingHistory(true);
     try {
@@ -55,7 +43,6 @@ function MiembrosDashboard() {
     }
   };
 
-  // Autenticación con Google y verificación en API
   const login = useGoogleLogin({
     scope: 'https://www.googleapis.com/auth/youtube.readonly',
     onSuccess: async (tokenResponse) => {
@@ -81,15 +68,15 @@ function MiembrosDashboard() {
           localStorage.setItem('lfaf_member', JSON.stringify(data.member));
           fetchHistory(data.member.googleId);
         } else {
-          setError('No se pudo verificar tu membresía con nuestros canales.');
+          setError('No se pudo verificar tu membresía. Asegúrate de estar suscrito.');
         }
       } catch (err) {
-        setError('Error de conexión con el servidor maestro.');
+        setError('Error de conexión con el servidor. Intenta de nuevo.');
       } finally {
         setLoading(false);
       }
     },
-    onError: () => setError('Proceso de inicio de sesión cancelado.')
+    onError: () => setError('Inicio de sesión cancelado.')
   });
 
   const logout = () => {
@@ -110,7 +97,7 @@ function MiembrosDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.image || !formData.title || !formData.content) {
-      setPublishMessage({ type: 'error', text: '⚠️ Debes completar todos los campos y subir una imagen.' });
+      setPublishMessage({ type: 'error', text: '⚠️ Por favor, completa todos los campos y sube una imagen.' });
       return;
     }
     setPublishing(true); setPublishMessage({ type: '', text: '' });
@@ -127,23 +114,21 @@ function MiembrosDashboard() {
       const result = await res.json();
 
       if (result.success) {
-        setPublishMessage({ type: 'success', text: '✅ ¡Tu noticia está siendo procesada y el video se generará pronto!' });
+        setPublishMessage({ type: 'success', text: '✅ ¡Publicación exitosa! Tu video está siendo generado.' });
         const updatedUser = { ...user, creditsUsed: user.creditsUsed + 1 };
         setUser(updatedUser);
         localStorage.setItem('lfaf_member', JSON.stringify(updatedUser));
         
-        // Limpiar formulario y recargar historial
         setFormData({ title: '', content: '', videoType: 'short', image: null });
         setImagePreview(null);
         fetchHistory(user.googleId);
         
-        // Mover al usuario a la pestaña de historial tras 2 segundos
         setTimeout(() => setActiveTab('historial'), 2000);
       } else {
         setPublishMessage({ type: 'error', text: result.error || '❌ Error al intentar publicar.' });
       }
     } catch (err) {
-      setPublishMessage({ type: 'error', text: '❌ Ocurrió un error de conexión con nuestros servidores.' });
+      setPublishMessage({ type: 'error', text: '❌ Ocurrió un error de conexión.' });
     } finally {
       setPublishing(false);
     }
@@ -151,324 +136,185 @@ function MiembrosDashboard() {
 
   const hasCredits = user ? (user.totalCredits - user.creditsUsed > 0) : false;
 
-  // COMPONENTE INTERNO: Landing Page Espectacular para No Logueados / No Miembros
-  const GuestLanding = () => (
-    <div className="space-y-24 py-12">
-      {/* Hero Principal */}
-      <div className="text-center space-y-8 max-w-5xl mx-auto px-4">
-        <div className="inline-block bg-red-100 text-red-700 px-6 py-2 rounded-full font-bold tracking-widest text-sm mb-4 border border-red-200">
-          PROGRAMA DE CREADORES ASOCIADOS
-        </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 tracking-tight leading-tight">
-          Transforma tus ideas en <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">
-            Noticias y Videos Virales
-          </span>
-        </h1>
-        <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-          Al unirte a las membresías de nuestros canales, desbloqueas el acceso exclusivo a nuestro motor de Inteligencia Artificial. Tú pones el texto, nosotros creamos el contenido 4K.
-        </p>
-      </div>
-
-      {/* Grid de Beneficios (Estilo Bento Box) */}
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
-        <div className="bg-white p-10 rounded-[2rem] shadow-xl border border-gray-100 hover:-translate-y-2 transition-transform duration-300">
-          <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-50 text-red-600 rounded-2xl flex items-center justify-center text-4xl mb-8 shadow-inner">📰</div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Artículo en Web</h3>
-          <p className="text-gray-600 leading-relaxed">Tu noticia se publicará directamente en la portada de Noticias LAT, ganando visibilidad inmediata frente a miles de lectores diarios.</p>
-        </div>
-        <div className="bg-white p-10 rounded-[2rem] shadow-xl border border-gray-100 hover:-translate-y-2 transition-transform duration-300">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-4xl mb-8 shadow-inner">🤖</div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Video Automatizado</h3>
-          <p className="text-gray-600 leading-relaxed">Nuestros servidores procesan tu texto, le aplican voz neuronal y generan un video profesional para YouTube de forma automática.</p>
-        </div>
-        <div className="bg-white p-10 rounded-[2rem] shadow-xl border border-gray-100 hover:-translate-y-2 transition-transform duration-300">
-          <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 text-green-600 rounded-2xl flex items-center justify-center text-4xl mb-8 shadow-inner">📈</div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Créditos Acumulativos</h3>
-          <p className="text-gray-600 leading-relaxed">Obtén desde 1 hasta 24 publicaciones mensuales. Mientras a más canales estés suscrito, más poder de publicación tendrás.</p>
-        </div>
-      </div>
-
-      {/* Call To Action - Canales */}
-      <div className="bg-gradient-to-b from-gray-900 to-black rounded-[3rem] p-12 md:p-20 text-center text-white shadow-2xl max-w-5xl mx-auto border border-gray-800">
-        <h2 className="text-4xl md:text-5xl font-extrabold mb-6">Elige tu Canal y Hazte Miembro</h2>
-        <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">Selecciona cualquiera de nuestros canales oficiales, elige el nivel que prefieras (Básico, Pro o VIP) y regresa aquí para empezar a crear.</p>
-        
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <a href="https://www.youtube.com/channel/UCMmKU1g6g5JWdLtzLxs5NKg/join" target="_blank" rel="noreferrer" className="group relative overflow-hidden bg-gray-800 hover:bg-gray-700 p-6 rounded-2xl border border-gray-700 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600 rounded-full blur-[80px] opacity-20 group-hover:opacity-50 transition-opacity"></div>
-            <div className="flex items-center justify-between relative z-10">
-              <div className="text-left">
-                <h4 className="text-2xl font-bold text-white mb-1">Última Hora</h4>
-                <p className="text-gray-400 text-sm">Noticias de impacto rápido</p>
-              </div>
-              <span className="bg-red-600 text-white font-bold py-3 px-6 rounded-xl group-hover:scale-105 transition-transform">Unirse ↗</span>
-            </div>
-          </a>
-          
-          <a href="https://www.youtube.com/channel/UC1oqIJVGLAa1CB5yAH5fDyA/join" target="_blank" rel="noreferrer" className="group relative overflow-hidden bg-gray-800 hover:bg-gray-700 p-6 rounded-2xl border border-gray-700 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600 rounded-full blur-[80px] opacity-20 group-hover:opacity-50 transition-opacity"></div>
-            <div className="flex items-center justify-between relative z-10">
-              <div className="text-left">
-                <h4 className="text-2xl font-bold text-white mb-1">Noticias AHORA</h4>
-                <p className="text-gray-400 text-sm">Actualidad internacional</p>
-              </div>
-              <span className="bg-red-600 text-white font-bold py-3 px-6 rounded-xl group-hover:scale-105 transition-transform">Unirse ↗</span>
-            </div>
-          </a>
-
-          <a href="https://www.youtube.com/channel/UCOW3IHGU3XK9oS-o8HnPtpw/join" target="_blank" rel="noreferrer" className="group relative overflow-hidden bg-gray-800 hover:bg-gray-700 p-6 rounded-2xl border border-gray-700 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600 rounded-full blur-[80px] opacity-20 group-hover:opacity-50 transition-opacity"></div>
-            <div className="flex items-center justify-between relative z-10">
-              <div className="text-left">
-                <h4 className="text-2xl font-bold text-white mb-1">Noticias HOY</h4>
-                <p className="text-gray-400 text-sm">Resumen diario</p>
-              </div>
-              <span className="bg-red-600 text-white font-bold py-3 px-6 rounded-xl group-hover:scale-105 transition-transform">Unirse ↗</span>
-            </div>
-          </a>
-
-          <div className="relative overflow-hidden bg-gray-800/50 p-6 rounded-2xl border border-gray-700/50 flex items-center justify-center opacity-70">
-            <div className="text-center">
-              <h4 className="text-xl font-bold text-gray-400 mb-1">4to Canal LFAF</h4>
-              <p className="text-gray-500 text-sm">Próximamente disponible</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] selection:bg-red-200">
-      <Head><title>Portal Premium de Creadores | Noticias LAT</title></Head>
-      <Header />
+    <Layout>
+      <Head>
+        <title>Portal Premium de Creadores | Noticias LAT</title>
+      </Head>
 
-      <main className="flex-grow container mx-auto px-4 py-12 max-w-7xl">
-        
-        {/* CABECERA DE LOGIN ESTADO DESCONECTADO */}
+      <div className="main-content">
         {!user ? (
-          <div className="text-center mb-8 relative z-10">
-            <button 
-              onClick={() => login()} disabled={loading}
-              className="bg-white border-2 border-gray-200 text-gray-900 hover:border-blue-600 hover:text-blue-600 text-xl font-extrabold py-5 px-14 rounded-full transition-all shadow-2xl hover:shadow-[0_0_40px_rgba(37,99,235,0.2)] hover:-translate-y-1 flex items-center justify-center gap-4 mx-auto"
-            >
-              {loading ? (
-                <span className="animate-pulse">Conectando con Google...</span>
-              ) : (
-                <>
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" className="w-8 h-8" alt="Google" />
-                  ENTRAR Y VERIFICAR MEMBRESÍA
-                </>
-              )}
-            </button>
-            {error && (
-              <div className="mt-6 animate-fade-in">
-                <span className="bg-red-100 text-red-800 border border-red-200 font-bold py-3 px-6 rounded-xl inline-block shadow-sm">
-                  {error}
-                </span>
+          <>
+            {/* HERO USANDO TU CSS EXISTENTE */}
+            <div className="static-hero" style={{ padding: '4rem 1rem', marginBottom: '2rem' }}>
+              <div className="container">
+                <span className="member-badge-hero">PROGRAMA DE CREADORES ASOCIADOS</span>
+                <h1 style={{ marginTop: '1rem', fontSize: '3.5rem' }}>Transforma tus ideas en<br/> <span style={{color: 'var(--color-accent)'}}>Videos Virales</span></h1>
+                <p>Al unirte a las membresías de nuestros canales, desbloqueas el acceso exclusivo a nuestro motor de Inteligencia Artificial.</p>
+                
+                <button onClick={() => login()} disabled={loading} className="btn-login-google">
+                  {loading ? 'Conectando...' : 'ENTRAR CON YOUTUBE / GOOGLE'}
+                </button>
+                {error && <div className="error-msg">{error}</div>}
               </div>
-            )}
-            <GuestLanding />
-          </div>
-        ) : (
-          
-          /* PANEL DE CONTROL DEL USUARIO LOGUEADO */
-          <div className="space-y-10 animate-fade-in">
-            
-            {/* Top Bar del Usuario */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-sm border border-gray-200 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8 sticky top-4 z-40">
-              <div className="flex items-center gap-6">
-                <div className="relative">
-                  <img src={user.avatar} alt="Perfil" className="w-20 h-20 rounded-full border-4 border-white shadow-xl object-cover" />
-                  {user.membershipLevel > 0 && (
-                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs font-black px-3 py-1 rounded-full border-2 border-white shadow-sm">
-                      LVL {user.membershipLevel}
-                    </div>
-                  )}
+            </div>
+
+            {/* BENTO GRID USANDO TU CSS EXISTENTE */}
+            <div className="container">
+              <div className="bento-grid" style={{ marginBottom: '4rem' }}>
+                <div className="static-card" style={{ textAlign: 'center' }}>
+                  <div className="icon-box">📰</div>
+                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-texto-titulos)' }}>Artículo en Web</h3>
+                  <p>Tu noticia se publicará directamente en la portada de Noticias LAT, ganando visibilidad inmediata.</p>
                 </div>
-                <div className="text-center md:text-left">
-                  <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{user.displayName}</h2>
-                  <p className="text-gray-500 font-medium">{user.email}</p>
+                <div className="static-card" style={{ textAlign: 'center' }}>
+                  <div className="icon-box">🤖</div>
+                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-texto-titulos)' }}>Video Automatizado</h3>
+                  <p>Procesamos tu texto, aplicamos voz neuronal y generamos un video para YouTube de forma automática.</p>
+                </div>
+                <div className="static-card" style={{ textAlign: 'center' }}>
+                  <div className="icon-box">📈</div>
+                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-texto-titulos)' }}>Créditos Acumulativos</h3>
+                  <p>Mientras a más canales estés suscrito, más poder de publicación tendrás (hasta 24 al mes).</p>
+                </div>
+              </div>
+
+              <div className="static-card" style={{ background: 'var(--color-tech-bg)', color: 'white', textAlign: 'center', padding: '3rem' }}>
+                <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Elige tu Canal y Hazte Miembro</h2>
+                <p style={{ color: 'var(--color-texto-suave)', marginBottom: '2rem' }}>Selecciona cualquiera de nuestros canales oficiales.</p>
+                <div className="channels-grid">
+                  <a href="https://www.youtube.com/channel/UCMmKU1g6g5JWdLtzLxs5NKg/join" target="_blank" className="channel-btn">▶️ Última Hora</a>
+                  <a href="https://www.youtube.com/channel/UC1oqIJVGLAa1CB5yAH5fDyA/join" target="_blank" className="channel-btn">▶️ Noticias AHORA</a>
+                  <a href="https://www.youtube.com/channel/UCOW3IHGU3XK9oS-o8HnPtpw/join" target="_blank" className="channel-btn">▶️ Noticias HOY</a>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="container" style={{ marginTop: '2rem' }}>
+            
+            {/* PANEL DE CONTROL SUPERIOR */}
+            <div className="static-card user-header-panel">
+              <div className="user-info">
+                <div style={{ position: 'relative' }}>
+                  <img src={user.avatar} alt="Perfil" className="user-avatar" />
+                  {user.membershipLevel > 0 && <span className="level-badge">LVL {user.membershipLevel}</span>}
+                </div>
+                <div>
+                  <h2 style={{ color: 'var(--color-texto-titulos)', fontSize: '1.5rem' }}>{user.displayName}</h2>
+                  <p style={{ color: 'var(--color-texto-suave)' }}>{user.email}</p>
                 </div>
               </div>
               
-              <div className="flex bg-gray-100 p-2 rounded-2xl">
-                <button 
-                  onClick={() => setActiveTab('estudio')} 
-                  className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'estudio' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-                >
-                  Estudio Creativo
-                </button>
-                <button 
-                  onClick={() => setActiveTab('historial')} 
-                  className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'historial' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-                >
-                  Mi Historial
-                </button>
-                <button onClick={logout} className="px-6 py-3 rounded-xl font-bold text-red-500 hover:bg-red-50 ml-2 transition">
-                  Salir
-                </button>
+              <div className="panel-tabs">
+                <button onClick={() => setActiveTab('estudio')} className={`tab-btn ${activeTab === 'estudio' ? 'active' : ''}`}>Estudio Creativo</button>
+                <button onClick={() => setActiveTab('historial')} className={`tab-btn ${activeTab === 'historial' ? 'active' : ''}`}>Mi Historial</button>
+                <button onClick={logout} className="tab-btn logout">Salir</button>
               </div>
             </div>
 
             {/* PESTAÑA: ESTUDIO DE CREACIÓN */}
             {activeTab === 'estudio' && (
-              <div className="space-y-8">
-                
-                {/* Tarjetas de Estadísticas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-[2rem] p-8 text-white shadow-2xl relative overflow-hidden">
-                    <div className="relative z-10">
-                      <h3 className="text-blue-200 uppercase tracking-widest text-sm font-extrabold mb-2">Créditos Listos</h3>
-                      <div className="text-7xl font-black">{user.totalCredits - user.creditsUsed}</div>
-                      <p className="mt-4 text-blue-100 font-medium">De {user.totalCredits} totales este mes</p>
-                    </div>
-                    <div className="absolute -bottom-10 -right-4 text-9xl opacity-20">🔥</div>
+              <div className="tab-content fade-in">
+                <div className="stats-grid">
+                  <div className="stat-card" style={{ background: 'var(--color-primario)', color: 'white' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.9rem', opacity: 0.8 }}>CRÉDITOS LISTOS</p>
+                    <h3 style={{ fontSize: '3rem', margin: '10px 0' }}>{user.totalCredits - user.creditsUsed}</h3>
+                    <p style={{ fontSize: '0.9rem' }}>De {user.totalCredits} totales este mes</p>
                   </div>
-                  
-                  <div className="bg-white rounded-[2rem] p-8 border border-gray-200 shadow-sm flex flex-col justify-center">
-                    <h3 className="text-gray-400 uppercase tracking-widest text-sm font-extrabold mb-4">Nivel Multiplicador</h3>
-                    <div className="text-4xl font-black text-gray-900">Nivel {user.membershipLevel}</div>
-                    <p className="text-gray-500 mt-4 font-medium">Basado en tus suscripciones activas.</p>
+                  <div className="stat-card">
+                    <p style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>NIVEL MULTIPLICADOR</p>
+                    <h3 style={{ fontSize: '2rem', margin: '10px 0', color: 'var(--color-texto-titulos)' }}>Nivel {user.membershipLevel}</h3>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>Basado en suscripciones activas</p>
                   </div>
-                  
-                  <div className="bg-white rounded-[2rem] p-8 border border-gray-200 shadow-sm flex flex-col justify-center">
-                    <h3 className="text-gray-400 uppercase tracking-widest text-sm font-extrabold mb-4">Renovación de Ciclo</h3>
-                    <div className="text-3xl font-black text-gray-900">
+                  <div className="stat-card">
+                    <p style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>RENOVACIÓN</p>
+                    <h3 style={{ fontSize: '1.8rem', margin: '10px 0', color: 'var(--color-texto-titulos)' }}>
                       {user.nextResetDate ? new Date(user.nextResetDate).toLocaleDateString() : 'N/A'}
-                    </div>
-                    <p className="text-gray-500 mt-4 font-medium">Tus créditos se reiniciarán este día.</p>
+                    </h3>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>Tus créditos se reiniciarán</p>
                   </div>
                 </div>
 
-                {/* Formulario o Bloqueo por Créditos */}
-                <div className="bg-white rounded-[2rem] shadow-sm border border-gray-200 overflow-hidden">
+                <div className="static-card" style={{ marginTop: '2rem' }}>
                   {!hasCredits ? (
-                     <div className="p-16 text-center bg-gray-50">
-                        <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-5xl mx-auto mb-6">🔒</div>
-                        <h3 className="text-3xl font-bold text-gray-900 mb-4">No tienes créditos disponibles</h3>
-                        <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">Para habilitar el Estudio de Creación, necesitas una membresía activa en YouTube o esperar a tu fecha de renovación.</p>
-                        <GuestLanding />
-                     </div>
+                    <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+                      <div className="icon-box" style={{ background: '#fff7ed', color: '#ea580c', margin: '0 auto 1rem auto' }}>🔒</div>
+                      <h3 style={{ fontSize: '1.8rem', color: 'var(--color-texto-titulos)' }}>No tienes créditos disponibles</h3>
+                      <p style={{ color: 'var(--color-texto-suave)', marginTop: '1rem' }}>Renueva tu membresía o suscríbete a un canal para publicar.</p>
+                    </div>
                   ) : (
-                    <div className="p-10 md:p-16">
-                      <div className="max-w-4xl mx-auto space-y-10">
-                        
-                        <div className="text-center mb-12">
-                          <h3 className="text-4xl font-extrabold text-gray-900 mb-4">Crea tu próxima Noticia</h3>
-                          <p className="text-xl text-gray-500">Completa la información con calidad. El motor IA se encargará del resto.</p>
+                    <div className="form-container">
+                      <h2 style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--color-texto-titulos)' }}>Crea tu próxima Noticia</h2>
+                      
+                      {publishMessage.text && (
+                        <div className={`message-box ${publishMessage.type === 'error' ? 'msg-error' : 'msg-success'}`}>
+                          {publishMessage.text}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                          <label>1. Titular de Impacto</label>
+                          <input 
+                            type="text" required maxLength="100" className="form-input"
+                            value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} 
+                            placeholder="Ej: LFAF Tech anuncia nueva IA..." 
+                          />
                         </div>
 
-                        {publishMessage.text && (
-                          <div className={`p-6 rounded-2xl font-bold text-lg text-center border ${publishMessage.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                            {publishMessage.text}
-                          </div>
-                        )}
+                        <div className="form-group">
+                          <label>2. Cuerpo de la Noticia</label>
+                          <textarea 
+                            required rows="6" className="form-input"
+                            value={formData.content} onChange={(e) => setFormData({...formData, content: e.target.value})} 
+                            placeholder="Desarrolla aquí la información. Nuestro motor extraerá el guion..."
+                          ></textarea>
+                        </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-8">
-                          
-                          {/* Campo 1: Título */}
-                          <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 transition-all focus-within:bg-white focus-within:shadow-xl focus-within:border-blue-200">
-                            <label className="flex items-center gap-3 text-lg font-bold text-gray-900 mb-4">
-                              <span className="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm">1</span>
-                              Titular de Impacto
-                            </label>
-                            <input 
-                              type="text" required maxLength="100"
-                              className="w-full bg-transparent text-3xl font-bold text-gray-800 placeholder-gray-300 outline-none"
-                              value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} 
-                              placeholder="Ej: LFAF Tech anuncia nueva IA..." 
-                            />
-                            <div className="text-right text-sm text-gray-400 font-medium mt-2">{formData.title.length}/100</div>
-                          </div>
-
-                          {/* Campo 2: Contenido */}
-                          <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 transition-all focus-within:bg-white focus-within:shadow-xl focus-within:border-blue-200">
-                            <label className="flex items-center gap-3 text-lg font-bold text-gray-900 mb-4">
-                              <span className="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm">2</span>
-                              Cuerpo de la Noticia
-                            </label>
-                            <textarea 
-                              required rows="6" 
-                              className="w-full bg-transparent text-xl leading-relaxed text-gray-700 placeholder-gray-300 outline-none resize-none"
-                              value={formData.content} onChange={(e) => setFormData({...formData, content: e.target.value})} 
-                              placeholder="Desarrolla aquí la información. Nuestro motor extraerá el guion perfecto para el video basándose en este texto..."
-                            ></textarea>
-                          </div>
-
-                          {/* Campo 3 y 4: Imagen y Formato */}
-                          <div className="grid md:grid-cols-2 gap-8">
-                            <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 flex flex-col justify-between">
-                              <div>
-                                <label className="flex items-center gap-3 text-lg font-bold text-gray-900 mb-4">
-                                  <span className="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm">3</span>
-                                  Imagen en Alta Calidad
-                                </label>
-                                <input 
-                                  type="file" required accept="image/*" id="file-upload" className="hidden"
-                                  onChange={handleImageChange} 
-                                />
-                                <label htmlFor="file-upload" className="cursor-pointer block text-center border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-2xl p-8 transition-all">
-                                  {imagePreview ? (
-                                    <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover rounded-xl shadow-md" />
-                                  ) : (
-                                    <div className="text-gray-500 font-bold">
-                                      <span className="text-4xl block mb-2">📸</span>
-                                      Clic para subir imagen
-                                    </div>
-                                  )}
-                                </label>
-                              </div>
-                            </div>
-
-                            <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 flex flex-col justify-between">
-                              <div>
-                                <label className="flex items-center gap-3 text-lg font-bold text-gray-900 mb-4">
-                                  <span className="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm">4</span>
-                                  Formato de YouTube
-                                </label>
-                                <div className="space-y-4">
-                                  <label className={`flex items-center p-5 rounded-2xl border-2 cursor-pointer transition-all ${formData.videoType === 'short' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                                    <input type="radio" name="videoType" value="short" className="hidden" checked={formData.videoType === 'short'} onChange={(e) => setFormData({...formData, videoType: e.target.value})} />
-                                    <div className="text-3xl mr-4">📱</div>
-                                    <div>
-                                      <div className="font-extrabold text-gray-900 text-lg">YouTube Short</div>
-                                      <div className="text-gray-500 text-sm font-medium">Formato Vertical 9:16 (Rápido)</div>
-                                    </div>
-                                  </label>
-                                  
-                                  <label className={`flex items-center p-5 rounded-2xl border-2 cursor-pointer transition-all ${formData.videoType === 'video' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                                    <input type="radio" name="videoType" value="video" className="hidden" checked={formData.videoType === 'video'} onChange={(e) => setFormData({...formData, videoType: e.target.value})} />
-                                    <div className="text-3xl mr-4">💻</div>
-                                    <div>
-                                      <div className="font-extrabold text-gray-900 text-lg">Video Normal</div>
-                                      <div className="text-gray-500 text-sm font-medium">Formato Horizontal 16:9 (Detallado)</div>
-                                    </div>
-                                  </label>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Botón Submit */}
-                          <div className="pt-6">
-                            <button 
-                              type="submit" disabled={publishing} 
-                              className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 rounded-[2rem] shadow-[0_20px_40px_rgba(22,163,74,0.3)] hover:shadow-[0_20px_50px_rgba(22,163,74,0.5)] transition-all text-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-2 flex items-center justify-center gap-4"
-                            >
-                              {publishing ? (
-                                <>
-                                  <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                  Procesando con IA...
-                                </>
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label>3. Imagen en Alta Calidad</label>
+                            <input type="file" required accept="image/*" id="file-upload" style={{display: 'none'}} onChange={handleImageChange} />
+                            <label htmlFor="file-upload" className="file-upload-box">
+                              {imagePreview ? (
+                                <img src={imagePreview} alt="Preview" className="img-preview" />
                               ) : (
-                                <>🚀 PUBLICAR Y ENVIAR AL MOTOR DE VIDEOS (-1 Crédito)</>
+                                <div style={{ color: 'var(--color-texto-suave)' }}>
+                                  <span style={{ fontSize: '2rem', display: 'block' }}>📸</span>
+                                  Clic para subir imagen
+                                </div>
                               )}
-                            </button>
+                            </label>
                           </div>
-                        </form>
-                      </div>
+
+                          <div className="form-group">
+                            <label>4. Formato de YouTube</label>
+                            <div className="radio-group">
+                              <label className={`radio-option ${formData.videoType === 'short' ? 'selected' : ''}`}>
+                                <input type="radio" name="videoType" value="short" checked={formData.videoType === 'short'} onChange={(e) => setFormData({...formData, videoType: e.target.value})} style={{display:'none'}} />
+                                <span style={{ fontSize: '1.5rem', marginRight: '10px' }}>📱</span>
+                                <div>
+                                  <strong>YouTube Short</strong>
+                                  <div style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)' }}>Formato Vertical</div>
+                                </div>
+                              </label>
+                              <label className={`radio-option ${formData.videoType === 'video' ? 'selected' : ''}`}>
+                                <input type="radio" name="videoType" value="video" checked={formData.videoType === 'video'} onChange={(e) => setFormData({...formData, videoType: e.target.value})} style={{display:'none'}} />
+                                <span style={{ fontSize: '1.5rem', marginRight: '10px' }}>💻</span>
+                                <div>
+                                  <strong>Video Normal</strong>
+                                  <div style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)' }}>Formato Horizontal</div>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button type="submit" disabled={publishing} className="btn-submit">
+                          {publishing ? 'Procesando con IA...' : '🚀 PUBLICAR Y GENERAR VIDEO (-1 Crédito)'}
+                        </button>
+                      </form>
                     </div>
                   )}
                 </div>
@@ -477,62 +323,40 @@ function MiembrosDashboard() {
 
             {/* PESTAÑA: HISTORIAL */}
             {activeTab === 'historial' && (
-              <div className="bg-white rounded-[2rem] shadow-sm border border-gray-200 p-8 md:p-12 animate-fade-in">
-                <div className="flex justify-between items-center mb-10">
-                  <div>
-                    <h3 className="text-3xl font-extrabold text-gray-900">Tus Publicaciones</h3>
-                    <p className="text-gray-500 font-medium mt-2">Seguimiento en tiempo real de tu contenido.</p>
-                  </div>
-                  <button onClick={() => fetchHistory(user.googleId)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-xl transition">
-                    ↻ Actualizar
-                  </button>
+              <div className="static-card tab-content fade-in" style={{ marginTop: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                  <h2 style={{ color: 'var(--color-texto-titulos)' }}>Tus Publicaciones</h2>
+                  <button onClick={() => fetchHistory(user.googleId)} className="btn-refresh">↻ Actualizar</button>
                 </div>
 
                 {loadingHistory ? (
-                  <div className="text-center py-20">
-                    <div className="inline-block animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-                    <p className="text-gray-500 font-bold text-xl">Sincronizando con los servidores...</p>
-                  </div>
+                  <div style={{ textAlign: 'center', padding: '3rem' }}>Sincronizando con los servidores...</div>
                 ) : history.length === 0 ? (
-                  <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                    <div className="text-6xl mb-4">👻</div>
-                    <p className="text-gray-800 font-bold text-2xl mb-2">Aún no hay publicaciones</p>
-                    <p className="text-gray-500 mb-6">Tu historial está limpio. Es un gran momento para crear tu primera noticia.</p>
-                    <button onClick={() => setActiveTab('estudio')} className="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition">
-                      Ir al Estudio Creativo
-                    </button>
+                  <div style={{ textAlign: 'center', padding: '4rem 1rem', background: 'var(--color-fondo-body)', borderRadius: '12px' }}>
+                    <span style={{ fontSize: '3rem' }}>👻</span>
+                    <h3 style={{ marginTop: '1rem', color: 'var(--color-texto-titulos)' }}>Aún no hay publicaciones</h3>
+                    <p style={{ color: 'var(--color-texto-suave)' }}>Ve al Estudio Creativo para crear tu primera noticia.</p>
                   </div>
                 ) : (
-                  <div className="grid gap-6">
+                  <div className="history-list">
                     {history.map((article) => (
-                      <div key={article._id} className="bg-gray-50 hover:bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all flex flex-col md:flex-row items-center gap-6">
-                        {/* Fecha visual */}
-                        <div className="bg-white p-4 rounded-xl border border-gray-100 text-center min-w-[100px] shadow-sm">
-                          <div className="text-sm font-bold text-gray-400 uppercase">{new Date(article.publishDate || article.createdAt).toLocaleString('default', { month: 'short' })}</div>
-                          <div className="text-3xl font-black text-gray-900">{new Date(article.publishDate || article.createdAt).getDate()}</div>
-                          <div className="text-xs font-bold text-gray-400">{new Date(article.publishDate || article.createdAt).getFullYear()}</div>
+                      <div key={article._id} className="history-item">
+                        <div className="history-date">
+                          <strong>{new Date(article.publishDate || article.createdAt).getDate()}</strong>
+                          <span>{new Date(article.publishDate || article.createdAt).toLocaleString('default', { month: 'short' })}</span>
                         </div>
-                        
-                        {/* Info Principal */}
-                        <div className="flex-grow text-center md:text-left">
-                          <h4 className="text-xl font-bold text-gray-900 mb-2">{article.title}</h4>
-                          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                            <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wide ${article.videoType === 'short' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                              {article.videoType === 'short' ? '📱 YouTube Short' : '💻 Video Normal'}
+                        <div className="history-info">
+                          <h4>{article.title}</h4>
+                          <div className="history-badges">
+                            <span className={`badge ${article.videoType === 'short' ? 'badge-purple' : 'badge-blue'}`}>
+                              {article.videoType === 'short' ? '📱 Short' : '💻 Video'}
                             </span>
-                            <span className="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wide flex items-center gap-2">
-                              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span className="badge badge-green">
                               {article.status === 'published' ? 'Activo en Web' : 'Procesando'}
                             </span>
                           </div>
                         </div>
-
-                        {/* Botón de Acción */}
-                        <div className="shrink-0">
-                          <Link href={`/articulo/${article._id}`} className="block bg-gray-900 hover:bg-black text-white font-bold py-4 px-8 rounded-xl transition-transform hover:scale-105 shadow-md">
-                            Ver Publicación ↗
-                          </Link>
-                        </div>
+                        <Link href={`/articulo/${article._id}`} className="btn-view">Ver ↗</Link>
                       </div>
                     ))}
                   </div>
@@ -541,20 +365,170 @@ function MiembrosDashboard() {
             )}
           </div>
         )}
-      </main>
-      <Footer />
-    </div>
+      </div>
+
+      {/* ESTILOS INTERNOS PARA NO AFECTAR TU CSS EXTERNO NI USAR TAILWIND */}
+      <style jsx>{`
+        .member-badge-hero {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          padding: 8px 16px;
+          border-radius: 50px;
+          font-size: 0.8rem;
+          font-weight: bold;
+          letter-spacing: 2px;
+        }
+        .btn-login-google {
+          background: white;
+          color: var(--color-texto-titulos);
+          border: 2px solid var(--color-borde);
+          padding: 15px 30px;
+          font-size: 1.1rem;
+          font-weight: 800;
+          border-radius: 50px;
+          margin-top: 2rem;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: var(--sombra-md);
+        }
+        .btn-login-google:hover {
+          border-color: var(--color-primario);
+          color: var(--color-primario);
+          transform: translateY(-2px);
+        }
+        .error-msg {
+          margin-top: 1rem;
+          color: #ef4444;
+          background: #fef2f2;
+          padding: 10px;
+          border-radius: 8px;
+          display: inline-block;
+          font-weight: bold;
+        }
+        .icon-box {
+          width: 70px;
+          height: 70px;
+          background: var(--color-primario-light);
+          color: var(--color-primario);
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2rem;
+          margin: 0 auto 1.5rem auto;
+        }
+        .channels-grid {
+          display: flex;
+          gap: 1rem;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .channel-btn {
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+          padding: 15px 25px;
+          border-radius: 12px;
+          font-weight: bold;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .channel-btn:hover { background: var(--color-accent); }
+        .user-header-panel {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 1rem;
+          padding: 1.5rem 2rem;
+        }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .user-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--color-borde); object-fit: cover;}
+        .level-badge {
+          position: absolute;
+          bottom: -5px; right: -5px;
+          background: #eab308; color: white;
+          font-size: 0.7rem; font-weight: bold;
+          padding: 3px 8px; border-radius: 20px;
+          border: 2px solid white;
+        }
+        .panel-tabs { display: flex; gap: 10px; background: var(--color-fondo-body); padding: 5px; border-radius: 12px; }
+        .tab-btn {
+          background: none; border: none; padding: 10px 20px;
+          font-weight: bold; color: var(--color-texto-suave); border-radius: 8px;
+          cursor: pointer; transition: 0.2s;
+        }
+        .tab-btn.active { background: white; color: var(--color-primario); box-shadow: var(--sombra-sm); }
+        .tab-btn.logout { color: #ef4444; }
+        .tab-btn.logout:hover { background: #fef2f2; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .stat-card { background: white; padding: 2rem; border-radius: var(--radio-card); box-shadow: var(--sombra-sm); border: 1px solid var(--color-borde); }
+        .form-container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 0.5rem; color: var(--color-texto-titulos); }
+        .form-input {
+          width: 100%; padding: 15px; border-radius: 12px;
+          border: 1px solid var(--color-borde); background: var(--color-fondo-body);
+          font-family: inherit; font-size: 1rem; transition: 0.3s; outline: none;
+        }
+        .form-input:focus { border-color: var(--color-primario); background: white; box-shadow: 0 0 0 3px var(--color-primario-light); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+        .file-upload-box {
+          display: flex; align-items: center; justify-content: center;
+          height: 120px; border: 2px dashed var(--color-borde); border-radius: 12px;
+          cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s;
+          background: var(--color-fondo-body); overflow: hidden;
+        }
+        .file-upload-box:hover { border-color: var(--color-primario); background: var(--color-primario-light); }
+        .img-preview { width: 100%; height: 100%; object-fit: cover; }
+        .radio-group { display: flex; flex-direction: column; gap: 10px; }
+        .radio-option {
+          display: flex; align-items: center; padding: 12px; border: 2px solid var(--color-borde);
+          border-radius: 12px; cursor: pointer; transition: 0.2s; background: white;
+        }
+        .radio-option.selected { border-color: var(--color-primario); background: var(--color-primario-light); }
+        .btn-submit {
+          width: 100%; background: #16a34a; color: white; padding: 20px;
+          border: none; border-radius: 12px; font-weight: 900; font-size: 1.2rem;
+          cursor: pointer; transition: 0.3s; margin-top: 1rem; box-shadow: 0 10px 20px rgba(22, 163, 74, 0.2);
+        }
+        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(22, 163, 74, 0.3); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .message-box { padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; margin-bottom: 2rem; }
+        .msg-error { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; }
+        .msg-success { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
+        .history-list { display: flex; flex-direction: column; gap: 1rem; }
+        .history-item {
+          display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem;
+          background: var(--color-fondo-body); border-radius: 12px; border: 1px solid var(--color-borde);
+          transition: 0.2s;
+        }
+        .history-item:hover { background: white; box-shadow: var(--sombra-md); border-color: var(--color-primario-light); }
+        .history-date { text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid var(--color-borde); min-width: 70px; }
+        .history-date strong { display: block; font-size: 1.5rem; line-height: 1; color: var(--color-texto-titulos); }
+        .history-date span { font-size: 0.75rem; text-transform: uppercase; color: var(--color-texto-suave); font-weight: bold; }
+        .history-info { flex-grow: 1; }
+        .history-info h4 { margin-bottom: 0.5rem; color: var(--color-texto-titulos); font-size: 1.1rem; }
+        .history-badges { display: flex; gap: 10px; }
+        .badge { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge-purple { background: #f3e8ff; color: #7e22ce; }
+        .badge-blue { background: #e0f2fe; color: #0284c7; }
+        .badge-green { background: #dcfce7; color: #16a34a; }
+        .btn-view { background: var(--color-tech-bg); color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; }
+        .btn-view:hover { background: black; }
+        .btn-refresh { background: var(--color-fondo-body); border: 1px solid var(--color-borde); padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-refresh:hover { background: white; border-color: var(--color-primario); color: var(--color-primario); }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+    </Layout>
   );
 }
 
-// Wrapper Principal con el Provider de Google
 export default function Miembros() {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  
   if (!clientId) {
-    return <div className="p-20 text-center text-red-500 font-bold text-2xl">⚠️ Faltan las credenciales de Google en el archivo .env.local</div>;
+    return <div style={{textAlign: 'center', padding: '5rem', color: 'red'}}>Faltan credenciales de Google</div>;
   }
-
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <MiembrosDashboard />

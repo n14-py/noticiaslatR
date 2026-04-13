@@ -68,6 +68,10 @@ export default function Header() {
                             </Link>
                         </li>
 
+                        <Link href="/miembros" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-bold transition shadow-md ml-4 flex items-center gap-2 hover:-translate-y-0.5">
+                                <span className="text-xl">🌟</span> Publicar Noticia
+                        </Link>
+
                         <li><Link href="/?categoria=todos" className={getLinkClass('todos')}>General</Link></li>
                         <li><Link href="/?categoria=politica" className={getLinkClass('politica')}>Política</Link></li>
                         <li><Link href="/?categoria=economia" className={getLinkClass('economia')}>Economía</Link></li>

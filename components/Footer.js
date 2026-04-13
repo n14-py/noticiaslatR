@@ -44,8 +44,15 @@ export default function Footer() {
                         <ul>
                             <li><Link href="/sobre-nosotros">Quiénes Somos</Link></li>
                             <li><Link href="/contacto">Contacto</Link></li>
+                            <li>
+                            <Link href="/miembros" className="text-gray-400 hover:text-blue-400 font-bold transition flex items-center gap-2">
+                            🌟 Portal de Creadores (Publicar)
+                                </Link>
+                            </li>
                         </ul>
                     </div>
+
+                    
                     
                     {/* Columna 3 */}
                     <div className="footer-col">

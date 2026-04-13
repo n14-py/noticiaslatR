@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Layout from '../components/Layout';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lfaftechapi-7nrb.onrender.com/api';
 

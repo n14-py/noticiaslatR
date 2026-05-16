@@ -16,154 +16,227 @@ export default function NotilatGaming() {
 
     const viewerRef = useRef(null);
 
-    // Todos tus juegos originales intactos
+    // NUEVA LISTA DE JUEGOS (Verificados y Actualizados)
     const games = [
+        // --- JUEGOS NUEVOS ---
         {
-            title: "Italian Brainrot Quiz",
-            description: "Pon a prueba tus conocimientos con este divertido quiz italiano.",
-            thumbnail: "https://imgs.crazygames.com/italianbrainrotquiz-io_16x9/20250522065211/italianbrainrotquiz-io_16x9-cover?metadata=none&quality=70&width=599",
-            url: "https://www.crazygames.com/embed/italianbrainrotquiz-io",
+            title: "Bloxdhop.io",
+            description: "Salta por los bloques en este adictivo juego de parkour multijugador.",
+            thumbnail: "https://imgs.crazygames.com/bloxdhop-io_16x9/20250829023851/bloxdhop-io_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/bloxdhop-io",
+            category: "io"
+        },
+        {
+            title: "OpenFront",
+            description: "Juego de disparos táctico y acción militar en primera persona.",
+            thumbnail: "https://imgs.crazygames.com/openfront-gsw_16x9/20260515051210/openfront-gsw_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/openfront-gsw",
+            category: "shooter"
+        },
+        {
+            title: "UNO Online",
+            description: "El clásico juego de cartas multijugador para disfrutar con amigos.",
+            thumbnail: "https://imgs.crazygames.com/games/uno-online/cover-1679068977831.png?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/uno-online",
             category: "puzzle"
         },
         {
+            title: "Spider Solitaire",
+            description: "Relájate con este clásico juego de cartas y estrategia mental.",
+            thumbnail: "https://imgs.crazygames.com/spider-solitaire-fuw_16x9/20251008073941/spider-solitaire-fuw_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/spider-solitaire-fuw",
+            category: "puzzle"
+        },
+        {
+            title: "Battle Brigade",
+            description: "Dirige tu brigada y conquista territorios en este juego bélico.",
+            thumbnail: "https://imgs.crazygames.com/battle-brigade_16x9/20260420092345/battle-brigade_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/battle-brigade",
+            category: "action"
+        },
+        {
+            title: "Art of Defense",
+            description: "Protege tu base de oleadas enemigas en este épico Tower Defense.",
+            thumbnail: "https://imgs.crazygames.com/aod---art-of-defense_16x9/20260429163424/aod---art-of-defense_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/aod---art-of-defense",
+            category: "action"
+        },
+        {
+            title: "99 Nights (Bloxd)",
+            description: "Sobrevive la noche en este mundo de bloques multijugador.",
+            thumbnail: "https://imgs.crazygames.com/99-nights-bloxd-io_16x9/20260319034044/99-nights-bloxd-io_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/99-nights-bloxd-io",
+            category: "adventure"
+        },
+        {
+            title: "Hazmob FPS",
+            description: "Disparos online trepidantes contra jugadores de todo el mundo.",
+            thumbnail: "https://imgs.crazygames.com/hazmob-fps-online-shooter_16x9/20260302022643/hazmob-fps-online-shooter_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/hazmob-fps-online-shooter",
+            category: "shooter"
+        },
+        {
+            title: "Leek Factory Tycoon",
+            description: "Gestiona tu propia fábrica y conviértete en un magnate industrial.",
+            thumbnail: "https://imgs.crazygames.com/leek-factory-tycoon_16x9/20260330040926/leek-factory-tycoon_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/leek-factory-tycoon",
+            category: "simulator"
+        },
+        {
+            title: "BuildNow GG",
+            description: "Construye y dispara en este battle royale táctico de entrenamiento.",
+            thumbnail: "https://imgs.crazygames.com/buildnow-gg_16x9/20251229084241/buildnow-gg_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/buildnow-gg",
+            category: "action"
+        },
+        {
+            title: "Castle Craft",
+            description: "Construye y defiende tu castillo contra los invasores.",
+            thumbnail: "https://imgs.crazygames.com/castle-craft_16x9/20250203045450/castle-craft_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/castle-craft",
+            category: "action"
+        },
+        {
+            title: "Basketball Stars",
+            description: "Demuestra tus habilidades en la cancha de baloncesto 1 contra 1.",
+            thumbnail: "https://imgs.crazygames.com/games/basketball-stars-2019/cover-1583231506155.png?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/basketball-stars-2019",
+            category: "action"
+        },
+        {
+            title: "Fragen",
+            description: "Resuelve acertijos y supera los niveles en este desafiante juego.",
+            thumbnail: "https://imgs.crazygames.com/fragen_16x9/20251022094210/fragen_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/fragen",
+            category: "puzzle"
+        },
+        {
+            title: "Fortzone Battle Royale",
+            description: "Battle Royale con construcción de fortalezas y mucha acción.",
+            thumbnail: "https://imgs.crazygames.com/fortzone-battle-royale-xkd_16x9/20250513044222/fortzone-battle-royale-xkd_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/fortzone-battle-royale-xkd",
+            category: "action"
+        },
+        {
+            title: "Traffic Rider",
+            description: "Juego de motocicletas en tráfico real a toda velocidad.",
+            thumbnail: "https://imgs.crazygames.com/traffic-rider-vvq_16x9/20250526021507/traffic-rider-vvq_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/traffic-rider-vvq",
+            category: "racing"
+        },
+        {
+            title: "Paper.io 2",
+            description: "Conquista territorio en este exitoso juego .io multijugador.",
+            thumbnail: "https://imgs.crazygames.com/paper-io-2_16x9/20250214024143/paper-io-2_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/paper-io-2",
+            category: "io"
+        },
+        {
+            title: "Rally Racer Dirt",
+            description: "Derrapa y corre en las mejores pistas de rally de tierra.",
+            thumbnail: "https://imgs.crazygames.com/rally-racer-dirt_16x9/20260220034629/rally-racer-dirt_16x9-cover?metadata=none&quality=75&width=196&dpr=2",
+            url: "https://www.crazygames.com/embed/rally-racer-dirt",
+            category: "racing"
+        },
+
+        // --- LOS QUE YA FUNCIONABAN BIEN ---
+        {
             title: "Italian Brainrot Clicker",
-            description: "Juego de clicker con temática italiana.",
+            description: "Juego de clicker con temática italiana y mucho humor.",
             thumbnail: "https://imgs.crazygames.com/italian-brainrot-clicker-usp_16x9/20250430033904/italian-brainrot-clicker-usp_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/italian-brainrot-clicker-usp",
             category: "io"
         },
         {
             title: "Tung Tung Sahur Obby",
-            description: "Supera los obstáculos en este desafío de plataformas.",
+            description: "Supera los obstáculos en este divertido desafío de plataformas.",
             thumbnail: "https://imgs.crazygames.com/tung-tung-sahur-obby-challenge_16x9/20250520041244/tung-tung-sahur-obby-challenge_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/tung-tung-sahur-obby-challenge",
             category: "adventure"
         },
         {
             title: "Prison Escape",
-            description: "Escapa de la prisión en este emocionante juego.",
+            description: "Escapa de la prisión evadiendo guardias en este emocionante juego.",
             thumbnail: "https://imgs.crazygames.com/prison-escape-lnj_16x9/20250509092652/prison-escape-lnj_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/prison-escape-lnj",
             category: "action"
         },
         {
             title: "Death City Zombie",
-            description: "Sobrevive a la invasión zombie en la ciudad.",
+            description: "Sobrevive a la letal invasión zombie en la ciudad.",
             thumbnail: "https://imgs.crazygames.com/death-city-zombie-invasion-liq_16x9/20241017024657/death-city-zombie-invasion-liq_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/death-city-zombie-invasion-liq",
             category: "shooter"
         },
         {
-            title: "Bullet Force",
-            description: "Juego de disparos multijugador en primera persona.",
-            thumbnail: "https://imgs.crazygames.com/bullet-force-multiplayer_16x9/20250422192901/bullet-force-multiplayer_16x9-cover?metadata=none&quality=70&width=599",
-            url: "https://www.crazygames.com/embed/bullet-force-multiplayer",
-            category: "shooter"
-        },
-        {
-            title: "Rally Racer Dirt",
-            description: "Carreras de rally en terrenos difíciles.",
-            thumbnail: "https://imgs.crazygames.com/rally-racer-dirt_16x9/20250227034748/rally-racer-dirt_16x9-cover?metadata=none&quality=70&width=599",
-            url: "https://www.crazygames.com/embed/rally-racer-dirt",
-            category: "racing"
-        },
-        {
             title: "Truck Driving Simulator",
-            description: "Simulador de conducción de camiones.",
+            description: "Conviértete en un experto simulador de conducción de camiones.",
             thumbnail: "https://imgs.crazygames.com/truck-driving-simulator-game_16x9/20241022081951/truck-driving-simulator-game_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/truck-driving-simulator-game",
             category: "simulator"
         },
         {
-            title: "Fortzone Battle Royale",
-            description: "Battle Royale con construcción de fortalezas.",
-            thumbnail: "https://imgs.crazygames.com/fortzone-battle-royale-xkd_16x9/20250513044222/fortzone-battle-royale-xkd_16x9-cover?metadata=none&quality=70&width=599",
-            url: "https://www.crazygames.com/embed/fortzone-battle-royale-xkd",
-            category: "action"
-        },
-        {
             title: "Count Masters",
-            description: "Juego de stickman con multitudes.",
+            description: "Acumula la mayor cantidad de stickmans en tu multitud.",
             thumbnail: "https://imgs.crazygames.com/count-masters-stickman-games_16x9/20250220041115/count-masters-stickman-games_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/count-masters-stickman-games",
             category: "io"
         },
         {
             title: "Bridge Race",
-            description: "Carrera para construir puentes y llegar primero.",
+            description: "Carrera para construir puentes y llegar primero a la meta.",
             thumbnail: "https://imgs.crazygames.com/bridge-race_16x9/20241227062023/bridge-race_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/bridge-race",
             category: "io"
         },
         {
             title: "Solar Smash",
-            description: "Simulador de destrucción planetaria.",
+            description: "Simulador sandbox de destrucción planetaria a gran escala.",
             thumbnail: "https://imgs.crazygames.com/solar-smash_16x9/20240722073047/solar-smash_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/solar-smash",
             category: "simulator"
         },
         {
             title: "Fighter Aircraft Pilot",
-            description: "Conviértete en piloto de combate.",
+            description: "Surca los cielos y conviértete en piloto de combate aéreo.",
             thumbnail: "https://imgs.crazygames.com/fighter-aircraft-pilotb.png?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/fighter-aircraft-pilot",
             category: "simulator"
         },
         {
-            title: "Traffic Rider",
-            description: "Juego de motocicletas en tráfico real.",
-            thumbnail: "https://imgs.crazygames.com/traffic-rider-vvq_16x9/20250328101418/traffic-rider-vvq_16x9-cover?metadata=none&quality=70&width=599",
-            url: "https://www.crazygames.com/embed/traffic-rider-vvq",
-            category: "racing"
-        },
-        {
             title: "Attack of Duty",
-            description: "Juego de disparos estilo Call of Duty.",
+            description: "Juego de disparos lleno de acción al estilo Call of Duty.",
             thumbnail: "https://imgs.crazygames.com/attack-of-duty_16x9/20240606142630/attack-of-duty_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/attack-of-duty",
             category: "shooter"
         },
         {
             title: "Roling Balls Sea Race",
-            description: "Carrera de bolas rodantes en el mar.",
+            description: "Carrera desafiante de bolas rodantes sobre el mar.",
             thumbnail: "https://imgs.crazygames.com/roling-balls-sea-race_16x9/20241029074138/roling-balls-sea-race_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/roling-balls-sea-race",
             category: "racing"
         },
         {
             title: "Screw Out Bolts",
-            description: "Juego de destornillar tuercas y tornillos.",
+            description: "Rompecabezas mecánico de destornillar tuercas y tornillos.",
             thumbnail: "https://imgs.crazygames.com/screw-out-bolts-and-nuts_16x9/20250507101325/screw-out-bolts-and-nuts_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/screw-out-bolts-and-nuts",
             category: "puzzle"
         },
         {
             title: "Squid Game Online",
-            description: "Juegos del calamar en versión online.",
+            description: "Los letales juegos del calamar en versión multijugador.",
             thumbnail: "https://imgs.crazygames.com/squid-game-online_16x9/20250403161318/squid-game-online_16x9-cover?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/squid-game-online",
             category: "io"
         },
         {
-            title: "Paper.io 2",
-            description: "Conquista territorio en este juego .io.",
-            thumbnail: "https://imgs.crazygames.com/paper-io-2_16x9/20250214024143/paper-io-2_16x9-cover?metadata=none&quality=70&width=599",
-            url: "https://www.crazygames.com/embed/paper-io-2",
-            category: "io"
-        },
-        {
             title: "Amazing Crime",
-            description: "Aventura de stickman en el mundo del crimen.",
+            description: "Aventura libre de stickman en el peligroso mundo del crimen.",
             thumbnail: "https://imgs.crazygames.com/amazing-crime-strange-stickman-rope-vice-vegas.png?metadata=none&quality=70&width=599",
             url: "https://www.crazygames.com/embed/amazing-crime-strange-stickman",
             category: "adventure"
-        },
-        {
-            title: "Metrage",
-            description: "Juego de estrategia y medición.",
-            thumbnail: "https://imgs.crazygames.com/games/metrage/thumb-1562259732086.png?metadata=none&quality=70&width=599",
-            url: "https://www.crazygames.com/embed/metrage",
-            category: "puzzle"
         }
     ];
 
@@ -175,7 +248,6 @@ export default function NotilatGaming() {
     });
 
     const openGame = (url, title, isFullscreen) => {
-        // En React es mejor cargar la URL de inmediato para que no se pierda la carga del iframe
         setViewerState({ 
             isOpen: true, 
             url: url, 
@@ -183,12 +255,10 @@ export default function NotilatGaming() {
             isLoading: true 
         });
         
-        // Ejecutar pantalla completa de inmediato si se pidió (los navegadores lo bloquean si hay retraso)
         if (isFullscreen && viewerRef.current) {
             viewerRef.current.requestFullscreen().catch(err => console.error("Error fullscreen:", err));
         }
 
-        // Quitar la pantalla de carga negra después de 1.5 segundos simulando el efecto original
         setTimeout(() => {
             setViewerState(prev => ({ ...prev, isLoading: false }));
         }, 1500);
@@ -201,7 +271,6 @@ export default function NotilatGaming() {
         }
     };
 
-    // Cerrar el menú si hacemos clic fuera
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (menuActive && !e.target.closest('.user-info') && !e.target.closest('.menu')) {
@@ -219,7 +288,6 @@ export default function NotilatGaming() {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                 <meta name="description" content="Juega los mejores juegos gratis en línea en NOTILAT Gaming. Acción, aventura, puzzle y más. Plataforma 100% gratuita." />
                 
-                {/* Script de verificación de Google AdSense */}
                 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696" crossorigin="anonymous"></script>
 
                 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -227,7 +295,6 @@ export default function NotilatGaming() {
             </Head>
 
             <div className="gaming-body">
-                {/* Cabecera */}
                 <header>
                     <a href="/" className="logo">NOTILAT Gaming</a>
                     <div className="user-info">
@@ -249,10 +316,7 @@ export default function NotilatGaming() {
                     </div>
                 </header>
 
-                {/* Contenedor Principal */}
                 <div className="container">
-                    
-                    {/* Barra de Búsqueda */}
                     <div className="search-container">
                         <input 
                             type="text" 
@@ -266,7 +330,6 @@ export default function NotilatGaming() {
                         </button>
                     </div>
 
-                    {/* Categorías */}
                     <div className="categories">
                         {[
                             {id: 'all', name: 'Todos'}, {id: 'action', name: 'Acción'}, 
@@ -286,7 +349,6 @@ export default function NotilatGaming() {
 
                     <h2 className="section-title">Juegos Populares</h2>
                     
-                    {/* Grilla de Juegos */}
                     <div className="games-grid">
                         {filteredGames.length > 0 ? filteredGames.map((game, i) => (
                             <div className="game-card" key={i}>
@@ -310,7 +372,6 @@ export default function NotilatGaming() {
                     </div>
                 </div>
 
-                {/* FOOTER LEGAL PARA ADSENSE */}
                 <footer id="legal-footer" className="legal-footer">
                     <div className="container footer-content">
                         <div className="footer-section">
@@ -335,7 +396,6 @@ export default function NotilatGaming() {
                     </div>
                 </footer>
 
-                {/* VISOR DEL JUEGO (REPARADO) */}
                 {viewerState.isOpen && (
                     <>
                         <div className="overlay" onClick={closeViewer} style={{display: 'block'}}></div>
@@ -345,7 +405,6 @@ export default function NotilatGaming() {
                                 <button className="viewer-close" onClick={closeViewer}>&times;</button>
                             </div>
                             
-                            {/* El iframe carga la URL inmediatamente ahora */}
                             <iframe 
                                 className="game-iframe" 
                                 src={viewerState.url} 
@@ -353,7 +412,6 @@ export default function NotilatGaming() {
                                 allow="gamepad *; autoplay; fullscreen"
                             ></iframe>
 
-                            {/* Overlay de carga que se oculta después de 1.5s */}
                             {viewerState.isLoading && (
                                 <div className="loading-overlay" style={{display: 'flex'}}>
                                     <div className="loading-spinner"></div>
@@ -366,7 +424,6 @@ export default function NotilatGaming() {
                 )}
             </div>
 
-            {/* ESTILOS GLOBALES */}
             <style jsx global>{`
                 :root {
                     --primary: #4834d4; 
@@ -427,7 +484,7 @@ export default function NotilatGaming() {
                 .btn-secondary { background-color: var(--warning); color: var(--dark); }
                 .btn:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.2); }
 
-                /* PIE DE PÁGINA (LEGAL PARA ADSENSE) */
+                /* PIE DE PÁGINA */
                 .legal-footer { background-color: #2d3436; color: #dfe6e9; padding: 40px 0 20px; margin-top: 40px; }
                 .footer-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; }
                 .footer-section h3 { color: var(--accent); margin-bottom: 15px; font-size: 18px; }

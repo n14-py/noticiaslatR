@@ -1,280 +1,511 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import React, { useState, useRef } from 'react';
 import Head from 'next/head';
-import Link from 'next/link';
-import Layout from '../components/Layout';
 
-// Configuración Edge
-export const runtime = 'experimental-edge';
+export default function NotilatGaming() {
+    const [activeCategory, setActiveCategory] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [menuActive, setMenuActive] = useState(false);
+    const [viewerState, setViewerState] = useState({ 
+        isOpen: false, 
+        url: '', 
+        title: '', 
+        isLoading: false, 
+        isFullscreen: false 
+    });
 
-// --- CONFIGURACIÓN ---
-const API_URL = 'https://lfaftechapi-7nrb.onrender.com';
-const SITE_NAME = 'Noticias.lat';
-const PLACEHOLDER_IMG = '/images/placeholder.jpg';
+    const viewerRef = useRef(null);
 
-// --- 1. SERVER SIDE PROPS ---
-export async function getServerSideProps(context) {
-    context.res.setHeader(
-        'Cache-Control',
-        'public, s-maxage=60, stale-while-revalidate=86400'
-    );
-
-    const { query } = context;
-    const page = parseInt(query.page || '1', 10);
-    const limit = 13; 
-    
-    let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&page=${page}&limit=${limit}`;
-    
-    if (query.categoria && query.categoria !== 'todos') {
-        endpoint += `&categoria=${query.categoria}`;
-    }
-    if (query.pais) {
-        endpoint += `&pais=${query.pais}`;
-    }
-
-    try {
-        const res = await fetch(endpoint);
-        if (!res.ok) throw new Error('Error fetching articles');
-        const data = await res.json();
-
-        let articles = [];
-        if (data.articulos && Array.isArray(data.articulos)) {
-            articles = data.articulos;
-        } else if (data.articles && Array.isArray(data.articles)) {
-            articles = data.articles;
-        } else if (data.docs && Array.isArray(data.docs)) {
-            articles = data.docs;
-        } else if (Array.isArray(data)) {
-            articles = data;
+    // Todos tus juegos originales intactos
+    const games = [
+        {
+            title: "Italian Brainrot Quiz",
+            description: "Pon a prueba tus conocimientos con este divertido quiz italiano.",
+            thumbnail: "https://imgs.crazygames.com/italianbrainrotquiz-io_16x9/20250522065211/italianbrainrotquiz-io_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/italianbrainrotquiz-io",
+            category: "puzzle"
+        },
+        {
+            title: "Italian Brainrot Clicker",
+            description: "Juego de clicker con temática italiana.",
+            thumbnail: "https://imgs.crazygames.com/italian-brainrot-clicker-usp_16x9/20250430033904/italian-brainrot-clicker-usp_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/italian-brainrot-clicker-usp",
+            category: "io"
+        },
+        {
+            title: "Tung Tung Sahur Obby",
+            description: "Supera los obstáculos en este desafío de plataformas.",
+            thumbnail: "https://imgs.crazygames.com/tung-tung-sahur-obby-challenge_16x9/20250520041244/tung-tung-sahur-obby-challenge_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/tung-tung-sahur-obby-challenge",
+            category: "adventure"
+        },
+        {
+            title: "Prison Escape",
+            description: "Escapa de la prisión en este emocionante juego.",
+            thumbnail: "https://imgs.crazygames.com/prison-escape-lnj_16x9/20250509092652/prison-escape-lnj_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/prison-escape-lnj",
+            category: "action"
+        },
+        {
+            title: "Death City Zombie",
+            description: "Sobrevive a la invasión zombie en la ciudad.",
+            thumbnail: "https://imgs.crazygames.com/death-city-zombie-invasion-liq_16x9/20241017024657/death-city-zombie-invasion-liq_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/death-city-zombie-invasion-liq",
+            category: "shooter"
+        },
+        {
+            title: "Bullet Force",
+            description: "Juego de disparos multijugador en primera persona.",
+            thumbnail: "https://imgs.crazygames.com/bullet-force-multiplayer_16x9/20250422192901/bullet-force-multiplayer_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/bullet-force-multiplayer",
+            category: "shooter"
+        },
+        {
+            title: "Rally Racer Dirt",
+            description: "Carreras de rally en terrenos difíciles.",
+            thumbnail: "https://imgs.crazygames.com/rally-racer-dirt_16x9/20250227034748/rally-racer-dirt_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/rally-racer-dirt",
+            category: "racing"
+        },
+        {
+            title: "Truck Driving Simulator",
+            description: "Simulador de conducción de camiones.",
+            thumbnail: "https://imgs.crazygames.com/truck-driving-simulator-game_16x9/20241022081951/truck-driving-simulator-game_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/truck-driving-simulator-game",
+            category: "simulator"
+        },
+        {
+            title: "Fortzone Battle Royale",
+            description: "Battle Royale con construcción de fortalezas.",
+            thumbnail: "https://imgs.crazygames.com/fortzone-battle-royale-xkd_16x9/20250513044222/fortzone-battle-royale-xkd_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/fortzone-battle-royale-xkd",
+            category: "action"
+        },
+        {
+            title: "Count Masters",
+            description: "Juego de stickman con multitudes.",
+            thumbnail: "https://imgs.crazygames.com/count-masters-stickman-games_16x9/20250220041115/count-masters-stickman-games_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/count-masters-stickman-games",
+            category: "io"
+        },
+        {
+            title: "Bridge Race",
+            description: "Carrera para construir puentes y llegar primero.",
+            thumbnail: "https://imgs.crazygames.com/bridge-race_16x9/20241227062023/bridge-race_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/bridge-race",
+            category: "io"
+        },
+        {
+            title: "Solar Smash",
+            description: "Simulador de destrucción planetaria.",
+            thumbnail: "https://imgs.crazygames.com/solar-smash_16x9/20240722073047/solar-smash_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/solar-smash",
+            category: "simulator"
+        },
+        {
+            title: "Fighter Aircraft Pilot",
+            description: "Conviértete en piloto de combate.",
+            thumbnail: "https://imgs.crazygames.com/fighter-aircraft-pilotb.png?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/fighter-aircraft-pilot",
+            category: "simulator"
+        },
+        {
+            title: "Traffic Rider",
+            description: "Juego de motocicletas en tráfico real.",
+            thumbnail: "https://imgs.crazygames.com/traffic-rider-vvq_16x9/20250328101418/traffic-rider-vvq_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/traffic-rider-vvq",
+            category: "racing"
+        },
+        {
+            title: "Attack of Duty",
+            description: "Juego de disparos estilo Call of Duty.",
+            thumbnail: "https://imgs.crazygames.com/attack-of-duty_16x9/20240606142630/attack-of-duty_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/attack-of-duty",
+            category: "shooter"
+        },
+        {
+            title: "Roling Balls Sea Race",
+            description: "Carrera de bolas rodantes en el mar.",
+            thumbnail: "https://imgs.crazygames.com/roling-balls-sea-race_16x9/20241029074138/roling-balls-sea-race_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/roling-balls-sea-race",
+            category: "racing"
+        },
+        {
+            title: "Screw Out Bolts",
+            description: "Juego de destornillar tuercas y tornillos.",
+            thumbnail: "https://imgs.crazygames.com/screw-out-bolts-and-nuts_16x9/20250507101325/screw-out-bolts-and-nuts_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/screw-out-bolts-and-nuts",
+            category: "puzzle"
+        },
+        {
+            title: "Squid Game Online",
+            description: "Juegos del calamar en versión online.",
+            thumbnail: "https://imgs.crazygames.com/squid-game-online_16x9/20250403161318/squid-game-online_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/squid-game-online",
+            category: "io"
+        },
+        {
+            title: "Paper.io 2",
+            description: "Conquista territorio en este juego .io.",
+            thumbnail: "https://imgs.crazygames.com/paper-io-2_16x9/20250214024143/paper-io-2_16x9-cover?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/paper-io-2",
+            category: "io"
+        },
+        {
+            title: "Amazing Crime",
+            description: "Aventura de stickman en el mundo del crimen.",
+            thumbnail: "https://imgs.crazygames.com/amazing-crime-strange-stickman-rope-vice-vegas.png?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/amazing-crime-strange-stickman",
+            category: "adventure"
+        },
+        {
+            title: "Metrage",
+            description: "Juego de estrategia y medición.",
+            thumbnail: "https://imgs.crazygames.com/games/metrage/thumb-1562259732086.png?metadata=none&quality=70&width=599",
+            url: "https://www.crazygames.com/embed/metrage",
+            category: "puzzle"
         }
+    ];
 
-        return {
-            props: {
-                initialArticles: articles,
-                pagination: {
-                    currentPage: data.paginaActual || data.page || 1,
-                    totalPages: data.totalPaginas || data.totalPages || 1,
-                    totalArticles: data.totalArticulos || data.totalDocs || 0
-                },
-                currentCategory: query.categoria || null,
-                currentCountry: query.pais || null
+    const filteredGames = games.filter(game => {
+        const matchesCategory = activeCategory === 'all' || game.category === activeCategory;
+        const matchesSearch = game.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              game.description.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
+
+    const openGame = (url, title, fullscreen) => {
+        setViewerState({ isOpen: true, url: '', title, isLoading: true, isFullscreen: fullscreen });
+        
+        setTimeout(() => {
+            setViewerState(prev => ({ ...prev, url, isLoading: false }));
+            if (fullscreen && viewerRef.current) {
+                viewerRef.current.requestFullscreen().catch(err => console.error(err));
             }
-        };
-    } catch (error) {
-        console.error("Error cargando noticias:", error);
-        return {
-            props: {
-                initialArticles: [],
-                pagination: { currentPage: 1, totalPages: 1 },
-                error: true
-            }
-        };
-    }
-}
-
-// --- 2. COMPONENTE PRINCIPAL ---
-export default function Home({ initialArticles, pagination, currentCategory, currentCountry, error }) {
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    
-    useEffect(() => {
-        const handleStart = () => setLoading(true);
-        const handleComplete = () => setLoading(false);
-
-        router.events.on('routeChangeStart', handleStart);
-        router.events.on('routeChangeComplete', handleComplete);
-        router.events.on('routeChangeError', handleComplete);
-
-        return () => {
-            router.events.off('routeChangeStart', handleStart);
-            router.events.off('routeChangeComplete', handleComplete);
-            router.events.off('routeChangeError', handleComplete);
-        };
-    }, [router]);
-
-    const getPageTitle = () => {
-        if (currentCategory && currentCategory !== 'todos') {
-            return `Noticias de ${currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)}`;
-        }
-        if (currentCountry) {
-            return `Noticias de ${currentCountry.toUpperCase()}`;
-        }
-        return 'Últimas Noticias';
+        }, 1500);
     };
 
-    const titleText = getPageTitle();
+    const closeViewer = () => {
+        setViewerState({ isOpen: false, url: '', title: '', isLoading: false, isFullscreen: false });
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        }
+    };
 
     return (
-        <Layout>
+        <>
             <Head>
-                {/* CORREGIDO: Usamos template literals para un solo string */}
-                <title>{`${titleText} - ${SITE_NAME}`}</title>
-                <meta name="description" content={`Mantente informado con las últimas noticias de ${titleText} en Noticias.lat. Cobertura global y actualizaciones al minuto.`} />
-                <link rel="canonical" href={`https://www.noticias.lat${router.asPath.split('?')[0]}`} />
+                <title>NOTILAT Gaming - Juegos y Diversión Gratis Online</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                <meta name="description" content="Juega los mejores juegos gratis en línea en NOTILAT Gaming. Acción, aventura, puzzle y más. Plataforma 100% gratuita." />
+                
+                {/* CÓDIGO DE VERIFICACIÓN DE ADSENSE AQUÍ */}
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696" crossorigin="anonymous"></script>
+                
+                <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
             </Head>
 
-            <div className="container main-content">
-                
-                <div style={{ marginBottom: '2rem', marginTop: '1rem' }}>
-                    <h1 style={{ 
-                        fontSize: '2rem', 
-                        fontFamily: 'var(--font-titulos)', 
-                        color: 'var(--color-texto-titulos)',
-                        borderLeft: '5px solid var(--color-primario)',
-                        paddingLeft: '15px'
-                    }}>
-                        {titleText}
-                    </h1>
+            <div className="gaming-body">
+                {/* Cabecera */}
+                <header>
+                    <a href="/" className="logo">NOTILAT Gaming</a>
+                    <div className="user-info">
+                        <button className="menu-btn" onClick={() => setMenuActive(!menuActive)}>
+                            <div className="menu-dot"></div>
+                            <div className="menu-dot"></div>
+                            <div className="menu-dot"></div>
+                        </button>
+                    </div>
+                    <div className={`menu ${menuActive ? 'active' : ''}`}>
+                        <div className="menu-item" onClick={() => { document.getElementById('legal-footer').scrollIntoView({behavior: 'smooth'}); setMenuActive(false); }}>
+                            <i className="fas fa-question-circle"></i>
+                            <span>¿Qué es NOTILAT Gaming?</span>
+                        </div>
+                        <div className="menu-item" onClick={() => { document.getElementById('legal-footer').scrollIntoView({behavior: 'smooth'}); setMenuActive(false); }}>
+                            <i className="fas fa-file-contract"></i>
+                            <span>Términos y Privacidad</span>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Contenedor Principal */}
+                <div className="container">
+                    
+                    {/* Barra de Búsqueda */}
+                    <div className="search-container">
+                        <input 
+                            type="text" 
+                            className="search-input" 
+                            placeholder="Buscar juegos..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <button className="search-btn">
+                            <i className="fas fa-search"></i>
+                        </button>
+                    </div>
+
+                    {/* Categorías */}
+                    <div className="categories">
+                        {[
+                            {id: 'all', name: 'Todos'}, {id: 'action', name: 'Acción'}, 
+                            {id: 'adventure', name: 'Aventura'}, {id: 'puzzle', name: 'Puzzle'}, 
+                            {id: 'racing', name: 'Carreras'}, {id: 'shooter', name: 'Shooter'}, 
+                            {id: 'simulator', name: 'Simulador'}, {id: 'io', name: '.io'}
+                        ].map(cat => (
+                            <div 
+                                key={cat.id}
+                                className={`category ${activeCategory === cat.id ? 'active' : ''}`}
+                                onClick={() => setActiveCategory(cat.id)}
+                            >
+                                {cat.name}
+                            </div>
+                        ))}
+                    </div>
+
+                    <h2 className="section-title">Juegos Populares</h2>
+                    
+                    {/* Grilla de Juegos */}
+                    <div className="games-grid">
+                        {filteredGames.length > 0 ? filteredGames.map((game, i) => (
+                            <div className="game-card" key={i}>
+                                <img src={game.thumbnail} alt={game.title} className="game-thumbnail" />
+                                <div className="game-info">
+                                    <div className="game-title">{game.title}</div>
+                                    <div className="game-description">{game.description}</div>
+                                    <div className="game-actions">
+                                        <button className="btn btn-primary" onClick={() => openGame(game.url, game.title, false)}>
+                                            <i className="fas fa-play"></i> Jugar
+                                        </button>
+                                        <button className="btn btn-secondary" onClick={() => openGame(game.url, game.title, true)}>
+                                            <i className="fas fa-expand"></i> Pantalla
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )) : (
+                            <p style={{gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: '#666'}}>No se encontraron juegos con esa búsqueda.</p>
+                        )}
+                    </div>
                 </div>
 
-                {loading ? (
-                    <SkeletonGrid />
-                ) : (
-                    <>
-                        {initialArticles && initialArticles.length > 0 ? (
-                            <div className="bento-grid">
-                                {initialArticles.map((article, index) => {
-                                    const isHero = (index === 0 && pagination.currentPage === 1);
-                                    return (
-                                        <ArticleCard 
-                                            key={article._id} 
-                                            article={article} 
-                                            isHero={isHero} 
-                                        />
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <EmptyState />
-                        )}
+                {/* FOOTER LEGAL PARA ADSENSE (Requisito fundamental para revisión) */}
+                <footer id="legal-footer" className="legal-footer">
+                    <div className="container footer-content">
+                        <div className="footer-section">
+                            <h3>Quiénes Somos</h3>
+                            <p>NOTILAT Gaming es una plataforma de entretenimiento dedicada a ofrecer acceso gratuito a una amplia variedad de minijuegos online para usuarios de todas las edades. Nuestro objetivo es brindar un espacio seguro y divertido.</p>
+                        </div>
+                        <div className="footer-section">
+                            <h3>Política de Privacidad</h3>
+                            <p>Respetamos profundamente tu privacidad. No recopilamos datos personales sensibles. Nuestro sitio web utiliza cookies técnicas estrictamente necesarias para el funcionamiento del portal y mejorar la experiencia de navegación del usuario.</p>
+                        </div>
+                        <div className="footer-section">
+                            <h3>Términos y Condiciones</h3>
+                            <p>El uso de este sitio web es totalmente gratuito. Los juegos alojados en esta plataforma pertenecen a sus respectivos creadores o distribuidores autorizados. Al utilizar la web, aceptas disfrutar del contenido de manera responsable.</p>
+                        </div>
+                        <div className="footer-section">
+                            <h3>Contacto</h3>
+                            <p>¿Tienes alguna duda, sugerencia o reclamación sobre el contenido? Contáctanos enviando un correo electrónico directamente a nuestro equipo de soporte técnico: <strong>contacto@noticias.lat</strong></p>
+                        </div>
+                    </div>
+                    <div className="footer-bottom">
+                        <p>&copy; {new Date().getFullYear()} NOTILAT Gaming. Todos los derechos reservados.</p>
+                    </div>
+                </footer>
 
-                        {initialArticles && initialArticles.length > 0 && (
-                            <Pagination 
-                                currentPage={pagination.currentPage} 
-                                totalPages={pagination.totalPages} 
-                                query={router.query}
-                            />
-                        )}
+                {/* Visor del Juego (Iframe Overlay) */}
+                {viewerState.isOpen && (
+                    <>
+                        <div className="overlay" onClick={closeViewer} style={{display: 'block'}}></div>
+                        <div className="game-viewer" ref={viewerRef} style={{display: 'flex'}}>
+                            <div className="viewer-header">
+                                <div className="viewer-title">{viewerState.title}</div>
+                                <button className="viewer-close" onClick={closeViewer}>&times;</button>
+                            </div>
+                            <iframe 
+                                className="game-iframe" 
+                                src={viewerState.url} 
+                                frameBorder="0" 
+                                allow="gamepad *;"
+                            ></iframe>
+                            {viewerState.isLoading && (
+                                <div className="loading-overlay" style={{display: 'flex'}}>
+                                    <div className="loading-spinner"></div>
+                                    <div className="loading-text">Cargando juego...</div>
+                                    <button className="skip-btn" onClick={() => setViewerState(prev => ({...prev, isLoading: false}))}>Saltar</button>
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
             </div>
-        </Layout>
-    );
-}
 
-// --- 3. SUB-COMPONENTES ---
+            {/* ESTILOS GLOBALES INTEGRADOS (Todo en un solo archivo) */}
+            <style jsx global>{`
+                :root {
+                    --primary: #4834d4; /* Color principal: Azul Gamer Moderno */
+                    --secondary: #686de0; /* Color secundario */
+                    --accent: #00cec9; /* Acento Neon */
+                    --dark: #1e272e;
+                    --light: #f5f6fa;
+                    --warning: #fdcb6e;
+                    --shadow: 0 5px 15px rgba(0,0,0,0.1);
+                }
 
-function ArticleCard({ article, isHero }) {
-    const fecha = new Date(article.fecha).toLocaleDateString('es-ES', { 
-        day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'
-    });
-    
-    const imgUrl = (article.imagen && article.imagen.startsWith('http')) ? article.imagen : PLACEHOLDER_IMG;
-    const hasVideo = (article.youtubeId && article.videoProcessingStatus === 'complete');
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                    font-family: 'Poppins', sans-serif;
+                    -webkit-tap-highlight-color: transparent;
+                }
 
-    return (
-        <div className={`article-card ${isHero ? 'hero-item' : ''}`}>
-            <Link href={`/articulo/${article._id}`} className="card-image-wrapper">
-                <img 
-                    src={imgUrl} 
-                    alt={article.titulo} 
-                    loading={isHero ? "eager" : "lazy"} 
-                    onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
-                />
+                .gaming-body {
+                    background-color: var(--light);
+                    color: var(--dark);
+                    min-height: 100vh;
+                    padding-top: 80px;
+                    padding-bottom: 0px;
+                }
+
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 0 20px;
+                }
+
+                .gaming-body header {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 15px 20px;
+                    background-color: var(--light);
+                    box-shadow: var(--shadow);
+                    z-index: 100;
+                }
+
+                .logo {
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: var(--primary);
+                    background: linear-gradient(45deg, var(--primary), var(--accent));
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    cursor: pointer;
+                    text-decoration: none;
+                }
+
+                .user-info { display: flex; align-items: center; gap: 15px; }
+
+                .menu-btn {
+                    background: none; border: none; font-size: 24px;
+                    color: var(--primary); cursor: pointer;
+                    display: flex; flex-direction: column; gap: 5px; padding: 5px;
+                }
+                .menu-dot { width: 5px; height: 5px; background-color: var(--primary); border-radius: 50%; }
+
+                .menu {
+                    position: fixed; top: 70px; right: 20px; background-color: white;
+                    border-radius: 10px; box-shadow: var(--shadow); padding: 15px;
+                    z-index: 101; display: none;
+                }
+                .menu.active { display: block; }
+                .menu-item {
+                    padding: 10px 15px; border-radius: 8px; cursor: pointer;
+                    transition: all 0.3s ease; display: flex; align-items: center; gap: 10px;
+                }
+                .menu-item:hover { background-color: rgba(72, 52, 212, 0.1); color: var(--primary); }
+
+                .section-title {
+                    font-size: 24px; margin-bottom: 20px; color: var(--primary);
+                    position: relative; padding-bottom: 10px;
+                }
+                .section-title::after {
+                    content: ''; position: absolute; bottom: 0; left: 0;
+                    width: 50px; height: 3px; background: linear-gradient(45deg, var(--primary), var(--accent));
+                    border-radius: 3px;
+                }
+
+                .categories {
+                    display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; margin-bottom: 20px; scrollbar-width: thin;
+                }
+                .categories::-webkit-scrollbar { height: 5px; }
+                .categories::-webkit-scrollbar-track { background: var(--light); }
+                .categories::-webkit-scrollbar-thumb { background-color: var(--primary); border-radius: 5px; }
                 
-                {hasVideo && (
-                    <div className="card-play-overlay">
-                        <div className="card-play-icon">
-                            <i className="fas fa-play"></i>
-                        </div>
-                    </div>
-                )}
-            </Link>
+                .category {
+                    padding: 8px 15px; background-color: white; border-radius: 20px;
+                    cursor: pointer; white-space: nowrap; font-size: 14px; font-weight: 500;
+                    box-shadow: var(--shadow); transition: all 0.3s;
+                }
+                .category:hover, .category.active {
+                    background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; transform: translateY(-2px);
+                }
 
-            <div className="card-content">
-                <div className="card-tags">
-                    <span className="tag">{article.categoria}</span>
-                    {hasVideo && <span className="tag" style={{background: '#000', color: '#fff'}}>VIDEO</span>}
-                </div>
+                .search-container { display: flex; margin-bottom: 20px; margin-top: 10px;}
+                .search-input {
+                    flex: 1; padding: 12px 15px; border: 2px solid #eee;
+                    border-radius: 10px 0 0 10px; font-size: 16px; outline: none;
+                }
+                .search-input:focus { border-color: var(--primary); }
+                .search-btn {
+                    padding: 0 20px; background: linear-gradient(45deg, var(--primary), var(--secondary));
+                    color: white; border: none; border-radius: 0 10px 10px 0; font-weight: 600; cursor: pointer;
+                }
+
+                .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
+                .game-card { background-color: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow); transition: all 0.3s; }
+                .game-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+                .game-thumbnail { width: 100%; height: 150px; object-fit: cover; transition: transform 0.3s; }
+                .game-card:hover .game-thumbnail { transform: scale(1.05); }
                 
-                <h3 className="card-title">
-                    <Link href={`/articulo/${article._id}`}>
-                        {article.titulo}
-                    </Link>
-                </h3>
+                .game-info { padding: 15px; }
+                .game-title { font-weight: 600; margin-bottom: 8px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .game-description { font-size: 14px; color: #666; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 40px; }
+                
+                .game-actions { display: flex; gap: 10px; }
+                .btn { flex: 1; padding: 8px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 14px; transition: all 0.3s;}
+                .btn-primary { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; }
+                .btn-secondary { background-color: var(--warning); color: var(--dark); }
+                .btn:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.2); }
 
-                <p className="card-excerpt">
-                    {article.descripcion ? article.descripcion.substring(0, isHero ? 200 : 100) + '...' : ''}
-                </p>
+                /* PIE DE PÁGINA (LEGAL PARA ADSENSE) */
+                .legal-footer { background-color: #2d3436; color: #dfe6e9; padding: 40px 0 20px; margin-top: 40px; }
+                .footer-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; }
+                .footer-section h3 { color: var(--accent); margin-bottom: 15px; font-size: 18px; }
+                .footer-section p { font-size: 13px; line-height: 1.6; color: #b2bec3; }
+                .footer-bottom { text-align: center; padding-top: 20px; border-top: 1px solid #636e72; font-size: 14px; }
 
-                <div className="card-meta">
-                    <span><i className="far fa-clock"></i> {fecha}</span>
-                </div>
-            </div>
-        </div>
-    );
-}
+                /* VISOR DEL JUEGO */
+                .game-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: white; z-index: 1000; flex-direction: column; }
+                .viewer-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; }
+                .viewer-title { font-weight: 600; font-size: 18px; }
+                .viewer-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.3s; }
+                .viewer-close:hover { background-color: rgba(255,255,255,0.2); transform: rotate(90deg); }
+                .game-iframe { width: 100%; height: calc(100% - 60px); border: none; background-color: #f0f0f0; }
+                .loading-overlay { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100% - 60px); background-color: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; color: white; }
+                .loading-spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+                .skip-btn { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+                .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 999; }
 
-function SkeletonGrid() {
-    return (
-        <div className="bento-grid">
-            <div className="article-card hero-item" style={{ border: 'none', boxShadow: 'none' }}>
-                <div className="skeleton skeleton-img" style={{ height: '100%' }}></div>
-            </div>
-            {[...Array(6)].map((_, i) => (
-                <div key={i} className="article-card" style={{ border: 'none', boxShadow: 'none' }}>
-                    <div className="skeleton skeleton-img" style={{ height: '180px' }}></div>
-                    <div style={{ padding: '1rem' }}>
-                        <div className="skeleton skeleton-title"></div>
-                        <div className="skeleton skeleton-title" style={{ width: '60%' }}></div>
-                        <div className="skeleton skeleton-text"></div>
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
+                @keyframes spin { to { transform: rotate(360deg); } }
 
-function EmptyState() {
-    return (
-        <div className="no-articles-message" style={{ textAlign: 'center', padding: '4rem' }}>
-            <i className="fas fa-newspaper" style={{ fontSize: '3rem', marginBottom: '1rem', color: '#cbd5e1' }}></i>
-            <h3>No se encontraron noticias</h3>
-            <p>Estamos actualizando nuestro feed. Vuelve en unos minutos.</p>
-            <Link href="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block', color: 'var(--color-primario)', fontWeight: 'bold' }}>
-                Recargar Página
-            </Link>
-        </div>
-    );
-}
-
-function Pagination({ currentPage, totalPages, query }) {
-    if (totalPages <= 1) return null;
-
-    const createPageLink = (page) => {
-        const newQuery = { ...query, page };
-        const params = new URLSearchParams();
-        Object.keys(newQuery).forEach(key => params.append(key, newQuery[key]));
-        return `/?${params.toString()}`;
-    };
-
-    return (
-        <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '3rem', paddingBottom: '2rem' }}>
-            {currentPage > 1 && (
-                <Link href={createPageLink(currentPage - 1)} style={{ marginRight: '1rem', fontWeight: 'bold' }}>
-                    <i className="fas fa-chevron-left"></i> Anterior
-                </Link>
-            )}
-
-            <span className="page-info" style={{ color: '#64748b' }}>
-                Página {currentPage} de {totalPages}
-            </span>
-
-            {currentPage < totalPages && (
-                <Link href={createPageLink(currentPage + 1)} style={{ marginLeft: '1rem', fontWeight: 'bold' }}>
-                    Siguiente <i className="fas fa-chevron-right"></i>
-                </Link>
-            )}
-        </div>
+                @media (max-width: 768px) {
+                    .games-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+                    .game-thumbnail { height: 120px; }
+                }
+                @media (max-width: 480px) {
+                    .games-grid { grid-template-columns: 1fr; }
+                    .game-actions { flex-direction: column; }
+                    .btn { width: 100%; }
+                    .footer-content { grid-template-columns: 1fr; }
+                }
+            `}</style>
+        </>
     );
 }

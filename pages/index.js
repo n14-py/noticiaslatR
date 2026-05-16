@@ -1,16 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 
 export default function NotilatGaming() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [menuActive, setMenuActive] = useState(false);
+    
+    // Estado del visor del juego
     const [viewerState, setViewerState] = useState({ 
         isOpen: false, 
         url: '', 
         title: '', 
-        isLoading: false, 
-        isFullscreen: false 
+        isLoading: false 
     });
 
     const viewerRef = useRef(null);
@@ -173,23 +174,43 @@ export default function NotilatGaming() {
         return matchesCategory && matchesSearch;
     });
 
-    const openGame = (url, title, fullscreen) => {
-        setViewerState({ isOpen: true, url: '', title, isLoading: true, isFullscreen: fullscreen });
+    const openGame = (url, title, isFullscreen) => {
+        // En React es mejor cargar la URL de inmediato para que no se pierda la carga del iframe
+        setViewerState({ 
+            isOpen: true, 
+            url: url, 
+            title: title, 
+            isLoading: true 
+        });
         
+        // Ejecutar pantalla completa de inmediato si se pidió (los navegadores lo bloquean si hay retraso)
+        if (isFullscreen && viewerRef.current) {
+            viewerRef.current.requestFullscreen().catch(err => console.error("Error fullscreen:", err));
+        }
+
+        // Quitar la pantalla de carga negra después de 1.5 segundos simulando el efecto original
         setTimeout(() => {
-            setViewerState(prev => ({ ...prev, url, isLoading: false }));
-            if (fullscreen && viewerRef.current) {
-                viewerRef.current.requestFullscreen().catch(err => console.error(err));
-            }
+            setViewerState(prev => ({ ...prev, isLoading: false }));
         }, 1500);
     };
 
     const closeViewer = () => {
-        setViewerState({ isOpen: false, url: '', title: '', isLoading: false, isFullscreen: false });
+        setViewerState({ isOpen: false, url: '', title: '', isLoading: false });
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(() => {});
         }
     };
+
+    // Cerrar el menú si hacemos clic fuera
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (menuActive && !e.target.closest('.user-info') && !e.target.closest('.menu')) {
+                setMenuActive(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [menuActive]);
 
     return (
         <>
@@ -198,9 +219,9 @@ export default function NotilatGaming() {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                 <meta name="description" content="Juega los mejores juegos gratis en línea en NOTILAT Gaming. Acción, aventura, puzzle y más. Plataforma 100% gratuita." />
                 
-                {/* CÓDIGO DE VERIFICACIÓN DE ADSENSE AQUÍ */}
+                {/* Script de verificación de Google AdSense */}
                 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696" crossorigin="anonymous"></script>
-                
+
                 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
             </Head>
@@ -289,7 +310,7 @@ export default function NotilatGaming() {
                     </div>
                 </div>
 
-                {/* FOOTER LEGAL PARA ADSENSE (Requisito fundamental para revisión) */}
+                {/* FOOTER LEGAL PARA ADSENSE */}
                 <footer id="legal-footer" className="legal-footer">
                     <div className="container footer-content">
                         <div className="footer-section">
@@ -314,7 +335,7 @@ export default function NotilatGaming() {
                     </div>
                 </footer>
 
-                {/* Visor del Juego (Iframe Overlay) */}
+                {/* VISOR DEL JUEGO (REPARADO) */}
                 {viewerState.isOpen && (
                     <>
                         <div className="overlay" onClick={closeViewer} style={{display: 'block'}}></div>
@@ -323,12 +344,16 @@ export default function NotilatGaming() {
                                 <div className="viewer-title">{viewerState.title}</div>
                                 <button className="viewer-close" onClick={closeViewer}>&times;</button>
                             </div>
+                            
+                            {/* El iframe carga la URL inmediatamente ahora */}
                             <iframe 
                                 className="game-iframe" 
                                 src={viewerState.url} 
                                 frameBorder="0" 
-                                allow="gamepad *;"
+                                allow="gamepad *; autoplay; fullscreen"
                             ></iframe>
+
+                            {/* Overlay de carga que se oculta después de 1.5s */}
                             {viewerState.isLoading && (
                                 <div className="loading-overlay" style={{display: 'flex'}}>
                                     <div className="loading-spinner"></div>
@@ -341,122 +366,50 @@ export default function NotilatGaming() {
                 )}
             </div>
 
-            {/* ESTILOS GLOBALES INTEGRADOS (Todo en un solo archivo) */}
+            {/* ESTILOS GLOBALES */}
             <style jsx global>{`
                 :root {
-                    --primary: #4834d4; /* Color principal: Azul Gamer Moderno */
-                    --secondary: #686de0; /* Color secundario */
-                    --accent: #00cec9; /* Acento Neon */
+                    --primary: #4834d4; 
+                    --secondary: #686de0; 
+                    --accent: #00cec9; 
                     --dark: #1e272e;
                     --light: #f5f6fa;
                     --warning: #fdcb6e;
                     --shadow: 0 5px 15px rgba(0,0,0,0.1);
                 }
 
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                    font-family: 'Poppins', sans-serif;
-                    -webkit-tap-highlight-color: transparent;
-                }
+                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
 
-                .gaming-body {
-                    background-color: var(--light);
-                    color: var(--dark);
-                    min-height: 100vh;
-                    padding-top: 80px;
-                    padding-bottom: 0px;
-                }
+                .gaming-body { background-color: var(--light); color: var(--dark); min-height: 100vh; padding-top: 80px; padding-bottom: 0px; }
+                .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-                .container {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 0 20px;
-                }
-
-                .gaming-body header {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 15px 20px;
-                    background-color: var(--light);
-                    box-shadow: var(--shadow);
-                    z-index: 100;
-                }
-
-                .logo {
-                    font-size: 28px;
-                    font-weight: 700;
-                    color: var(--primary);
-                    background: linear-gradient(45deg, var(--primary), var(--accent));
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    cursor: pointer;
-                    text-decoration: none;
-                }
-
+                .gaming-body header { position: fixed; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: var(--light); box-shadow: var(--shadow); z-index: 100; }
+                .logo { font-size: 28px; font-weight: 700; color: var(--primary); background: linear-gradient(45deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; text-decoration: none; }
                 .user-info { display: flex; align-items: center; gap: 15px; }
 
-                .menu-btn {
-                    background: none; border: none; font-size: 24px;
-                    color: var(--primary); cursor: pointer;
-                    display: flex; flex-direction: column; gap: 5px; padding: 5px;
-                }
+                .menu-btn { background: none; border: none; font-size: 24px; color: var(--primary); cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
                 .menu-dot { width: 5px; height: 5px; background-color: var(--primary); border-radius: 50%; }
 
-                .menu {
-                    position: fixed; top: 70px; right: 20px; background-color: white;
-                    border-radius: 10px; box-shadow: var(--shadow); padding: 15px;
-                    z-index: 101; display: none;
-                }
+                .menu { position: fixed; top: 70px; right: 20px; background-color: white; border-radius: 10px; box-shadow: var(--shadow); padding: 15px; z-index: 101; display: none; }
                 .menu.active { display: block; }
-                .menu-item {
-                    padding: 10px 15px; border-radius: 8px; cursor: pointer;
-                    transition: all 0.3s ease; display: flex; align-items: center; gap: 10px;
-                }
+                .menu-item { padding: 10px 15px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 10px; }
                 .menu-item:hover { background-color: rgba(72, 52, 212, 0.1); color: var(--primary); }
 
-                .section-title {
-                    font-size: 24px; margin-bottom: 20px; color: var(--primary);
-                    position: relative; padding-bottom: 10px;
-                }
-                .section-title::after {
-                    content: ''; position: absolute; bottom: 0; left: 0;
-                    width: 50px; height: 3px; background: linear-gradient(45deg, var(--primary), var(--accent));
-                    border-radius: 3px;
-                }
+                .section-title { font-size: 24px; margin-bottom: 20px; color: var(--primary); position: relative; padding-bottom: 10px; }
+                .section-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 50px; height: 3px; background: linear-gradient(45deg, var(--primary), var(--accent)); border-radius: 3px; }
 
-                .categories {
-                    display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; margin-bottom: 20px; scrollbar-width: thin;
-                }
+                .categories { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; margin-bottom: 20px; scrollbar-width: thin; }
                 .categories::-webkit-scrollbar { height: 5px; }
                 .categories::-webkit-scrollbar-track { background: var(--light); }
                 .categories::-webkit-scrollbar-thumb { background-color: var(--primary); border-radius: 5px; }
                 
-                .category {
-                    padding: 8px 15px; background-color: white; border-radius: 20px;
-                    cursor: pointer; white-space: nowrap; font-size: 14px; font-weight: 500;
-                    box-shadow: var(--shadow); transition: all 0.3s;
-                }
-                .category:hover, .category.active {
-                    background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; transform: translateY(-2px);
-                }
+                .category { padding: 8px 15px; background-color: white; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 14px; font-weight: 500; box-shadow: var(--shadow); transition: all 0.3s; }
+                .category:hover, .category.active { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; transform: translateY(-2px); }
 
                 .search-container { display: flex; margin-bottom: 20px; margin-top: 10px;}
-                .search-input {
-                    flex: 1; padding: 12px 15px; border: 2px solid #eee;
-                    border-radius: 10px 0 0 10px; font-size: 16px; outline: none;
-                }
+                .search-input { flex: 1; padding: 12px 15px; border: 2px solid #eee; border-radius: 10px 0 0 10px; font-size: 16px; outline: none; }
                 .search-input:focus { border-color: var(--primary); }
-                .search-btn {
-                    padding: 0 20px; background: linear-gradient(45deg, var(--primary), var(--secondary));
-                    color: white; border: none; border-radius: 0 10px 10px 0; font-weight: 600; cursor: pointer;
-                }
+                .search-btn { padding: 0 20px; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; border: none; border-radius: 0 10px 10px 0; font-weight: 600; cursor: pointer; }
 
                 .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
                 .game-card { background-color: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow); transition: all 0.3s; }
@@ -487,7 +440,7 @@ export default function NotilatGaming() {
                 .viewer-title { font-weight: 600; font-size: 18px; }
                 .viewer-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.3s; }
                 .viewer-close:hover { background-color: rgba(255,255,255,0.2); transform: rotate(90deg); }
-                .game-iframe { width: 100%; height: calc(100% - 60px); border: none; background-color: #f0f0f0; }
+                .game-iframe { width: 100%; height: calc(100% - 60px); border: none; background-color: #f0f0f0; margin-bottom: -50px; overflow: hidden; }
                 .loading-overlay { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100% - 60px); background-color: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; color: white; }
                 .loading-spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
                 .skip-btn { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; margin-top: 20px; }

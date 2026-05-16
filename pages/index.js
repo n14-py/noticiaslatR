@@ -16,9 +16,8 @@ export default function NotilatGaming() {
 
     const viewerRef = useRef(null);
 
-    // NUEVA LISTA DE JUEGOS (Verificados y Actualizados)
+    // LISTA COMPLETA DE 31 JUEGOS SIN RECORTES
     const games = [
-        // --- JUEGOS NUEVOS ---
         {
             title: "Bloxdhop.io",
             description: "Salta por los bloques en este adictivo juego de parkour multijugador.",
@@ -138,8 +137,6 @@ export default function NotilatGaming() {
             url: "https://www.crazygames.com/embed/rally-racer-dirt",
             category: "racing"
         },
-
-        // --- LOS QUE YA FUNCIONABAN BIEN ---
         {
             title: "Italian Brainrot Clicker",
             description: "Juego de clicker con temática italiana y mucho humor.",
@@ -255,8 +252,14 @@ export default function NotilatGaming() {
             isLoading: true 
         });
         
+        // Ejecución de pantalla completa nativa
         if (isFullscreen && viewerRef.current) {
-            viewerRef.current.requestFullscreen().catch(err => console.error("Error fullscreen:", err));
+            const elem = viewerRef.current;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => console.log(err));
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen(); // Safari / iOS
+            }
         }
 
         setTimeout(() => {
@@ -268,6 +271,8 @@ export default function NotilatGaming() {
         setViewerState({ isOpen: false, url: '', title: '', isLoading: false });
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
         }
     };
 
@@ -288,6 +293,7 @@ export default function NotilatGaming() {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                 <meta name="description" content="Juega los mejores juegos gratis en línea en NOTILAT Gaming. Acción, aventura, puzzle y más. Plataforma 100% gratuita." />
                 
+                {/* Script de verificación de Google AdSense */}
                 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696" crossorigin="anonymous"></script>
 
                 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -316,7 +322,7 @@ export default function NotilatGaming() {
                     </div>
                 </header>
 
-                <div className="container">
+                <div className="container" style={{ paddingTop: '100px' }}>
                     <div className="search-container">
                         <input 
                             type="text" 
@@ -396,6 +402,7 @@ export default function NotilatGaming() {
                     </div>
                 </footer>
 
+                {/* VISOR DEL JUEGO: EXACTAMENTE COMO EL HTML ORIGINAL PERO EN REACT */}
                 {viewerState.isOpen && (
                     <>
                         <div className="overlay" onClick={closeViewer} style={{display: 'block'}}></div>
@@ -405,13 +412,16 @@ export default function NotilatGaming() {
                                 <button className="viewer-close" onClick={closeViewer}>&times;</button>
                             </div>
                             
+                            {/* IFRAME: Permite interactuar con los dedos en móvil */}
                             <iframe 
                                 className="game-iframe" 
                                 src={viewerState.url} 
                                 frameBorder="0" 
                                 allow="gamepad *; autoplay; fullscreen"
+                                allowFullScreen
                             ></iframe>
 
+                            {/* Pantalla de carga superpuesta */}
                             {viewerState.isLoading && (
                                 <div className="loading-overlay" style={{display: 'flex'}}>
                                     <div className="loading-spinner"></div>
@@ -424,6 +434,7 @@ export default function NotilatGaming() {
                 )}
             </div>
 
+            {/* TODOS LOS ESTILOS INCLUIDOS EN EL MISMO ARCHIVO */}
             <style jsx global>{`
                 :root {
                     --primary: #4834d4; 
@@ -437,7 +448,9 @@ export default function NotilatGaming() {
 
                 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
 
-                .gaming-body { background-color: var(--light); color: var(--dark); min-height: 100vh; padding-top: 80px; padding-bottom: 0px; }
+                body { margin: 0; padding: 0; background-color: var(--light); }
+
+                .gaming-body { background-color: var(--light); color: var(--dark); min-height: 100vh; padding-bottom: 0px; }
                 .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
                 .gaming-body header { position: fixed; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: var(--light); box-shadow: var(--shadow); z-index: 100; }
@@ -463,7 +476,7 @@ export default function NotilatGaming() {
                 .category { padding: 8px 15px; background-color: white; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 14px; font-weight: 500; box-shadow: var(--shadow); transition: all 0.3s; }
                 .category:hover, .category.active { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; transform: translateY(-2px); }
 
-                .search-container { display: flex; margin-bottom: 20px; margin-top: 10px;}
+                .search-container { display: flex; margin-bottom: 20px; }
                 .search-input { flex: 1; padding: 12px 15px; border: 2px solid #eee; border-radius: 10px 0 0 10px; font-size: 16px; outline: none; }
                 .search-input:focus { border-color: var(--primary); }
                 .search-btn { padding: 0 20px; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; border: none; border-radius: 0 10px 10px 0; font-weight: 600; cursor: pointer; }
@@ -475,7 +488,7 @@ export default function NotilatGaming() {
                 .game-card:hover .game-thumbnail { transform: scale(1.05); }
                 
                 .game-info { padding: 15px; }
-                .game-title { font-weight: 600; margin-bottom: 8px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .game-title { font-weight: 600; margin-bottom: 8px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--dark); }
                 .game-description { font-size: 14px; color: #666; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 40px; }
                 
                 .game-actions { display: flex; gap: 10px; }
@@ -484,24 +497,75 @@ export default function NotilatGaming() {
                 .btn-secondary { background-color: var(--warning); color: var(--dark); }
                 .btn:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.2); }
 
-                /* PIE DE PÁGINA */
                 .legal-footer { background-color: #2d3436; color: #dfe6e9; padding: 40px 0 20px; margin-top: 40px; }
                 .footer-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; }
                 .footer-section h3 { color: var(--accent); margin-bottom: 15px; font-size: 18px; }
                 .footer-section p { font-size: 13px; line-height: 1.6; color: #b2bec3; }
                 .footer-bottom { text-align: center; padding-top: 20px; border-top: 1px solid #636e72; font-size: 14px; }
 
-                /* VISOR DEL JUEGO */
-                .game-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: white; z-index: 1000; flex-direction: column; }
-                .viewer-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; }
+                /* CSS DEL VISOR RESTAURADO EXACTAMENTE AL ORIGINAL PARA EVITAR BLOQUEOS TÁCTILES */
+                .game-viewer { 
+                    position: fixed; 
+                    top: 0; 
+                    left: 0; 
+                    width: 100%; 
+                    height: 100%; 
+                    background-color: white; 
+                    z-index: 1000; 
+                    flex-direction: column; 
+                }
+                
+                .viewer-header { 
+                    padding: 15px; 
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center; 
+                    background: linear-gradient(45deg, var(--primary), var(--secondary)); 
+                    color: white; 
+                }
+                
                 .viewer-title { font-weight: 600; font-size: 18px; }
-                .viewer-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.3s; }
+                
+                .viewer-close { 
+                    background: none; 
+                    border: none; 
+                    color: white; 
+                    font-size: 24px; 
+                    cursor: pointer; 
+                    width: 40px; 
+                    height: 40px; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    border-radius: 50%; 
+                    transition: all 0.3s; 
+                }
+                
                 .viewer-close:hover { background-color: rgba(255,255,255,0.2); transform: rotate(90deg); }
-                .game-iframe { width: 100%; height: calc(100% - 60px); border: none; background-color: #f0f0f0; margin-bottom: -50px; overflow: hidden; }
-                .loading-overlay { position: absolute; top: 60px; left: 0; width: 100%; height: calc(100% - 60px); background-color: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; color: white; }
+                
+                .game-iframe { 
+                    width: 100%; 
+                    height: calc(100% - 60px); 
+                    border: none; 
+                    background-color: #f0f0f0; 
+                }
+                
+                .loading-overlay { 
+                    position: absolute; 
+                    top: 60px; 
+                    left: 0; 
+                    width: 100%; 
+                    height: calc(100% - 60px); 
+                    background-color: rgba(0,0,0,0.9); 
+                    flex-direction: column; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                }
+                
                 .loading-spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
                 .skip-btn { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; margin-top: 20px; }
-                .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 999; }
+                .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 999; }
 
                 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -509,8 +573,10 @@ export default function NotilatGaming() {
                     .games-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
                     .game-thumbnail { height: 120px; }
                 }
+                
                 @media (max-width: 480px) {
                     .games-grid { grid-template-columns: 1fr; }
+                    .logo { font-size: 22px; }
                     .game-actions { flex-direction: column; }
                     .btn { width: 100%; }
                     .footer-content { grid-template-columns: 1fr; }

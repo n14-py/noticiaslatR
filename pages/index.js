@@ -252,23 +252,27 @@ export default function NotilatGaming() {
             isLoading: true 
         });
         
-        // Ejecución de pantalla completa nativa
+        // Pantalla completa manual si el usuario lo solicita
         if (isFullscreen && viewerRef.current) {
             const elem = viewerRef.current;
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().catch(err => console.log(err));
             } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen(); // Safari / iOS
+                elem.webkitRequestFullscreen(); // Para Safari / iOS
             }
         }
 
+        // Simular tiempo de carga
         setTimeout(() => {
             setViewerState(prev => ({ ...prev, isLoading: false }));
         }, 1500);
     };
 
     const closeViewer = () => {
+        // Al cerrar, quitamos la URL para que el juego se detenga (corte el audio y el iframe quede en blanco)
         setViewerState({ isOpen: false, url: '', title: '', isLoading: false });
+        
+        // Salir de pantalla completa si estaba activa
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(() => {});
         } else if (document.webkitExitFullscreen) {
@@ -402,36 +406,45 @@ export default function NotilatGaming() {
                     </div>
                 </footer>
 
-                {/* VISOR DEL JUEGO: EXACTAMENTE COMO EL HTML ORIGINAL PERO EN REACT */}
-                {viewerState.isOpen && (
-                    <>
-                        <div className="overlay" onClick={closeViewer} style={{display: 'block'}}></div>
-                        <div className="game-viewer" ref={viewerRef} style={{display: 'flex'}}>
-                            <div className="viewer-header">
-                                <div className="viewer-title">{viewerState.title}</div>
-                                <button className="viewer-close" onClick={closeViewer}>&times;</button>
-                            </div>
-                            
-                            {/* IFRAME: Permite interactuar con los dedos en móvil */}
-                            <iframe 
-                                className="game-iframe" 
-                                src={viewerState.url} 
-                                frameBorder="0" 
-                                allow="gamepad *; autoplay; fullscreen"
-                                allowFullScreen
-                            ></iframe>
+                {/* VISOR DEL JUEGO: EL SECRETO PARA MÓVILES ESTÁ AQUÍ */}
+                {/* 1. Siempre está en el HTML (no usamos renderizado condicional destructivo) */}
+                {/* 2. Solo cambiamos display 'none' por 'flex' o 'block' */}
+                
+                <div 
+                    className="overlay" 
+                    onClick={closeViewer} 
+                    style={{ display: viewerState.isOpen ? 'block' : 'none' }}
+                ></div>
+                
+                <div 
+                    className="game-viewer" 
+                    ref={viewerRef} 
+                    style={{ display: viewerState.isOpen ? 'flex' : 'none' }}
+                >
+                    <div className="viewer-header">
+                        <div className="viewer-title">{viewerState.title}</div>
+                        <button className="viewer-close" onClick={closeViewer}>&times;</button>
+                    </div>
+                    
+                    {/* IFRAME: Siempre existe, solo cambiamos su URL (src) cuando se abre */}
+                    <iframe 
+                        className="game-iframe" 
+                        src={viewerState.url || "about:blank"} 
+                        frameBorder="0" 
+                        allow="gamepad *; clipboard-read; clipboard-write; autoplay; fullscreen"
+                        allowFullScreen
+                    ></iframe>
 
-                            {/* Pantalla de carga superpuesta */}
-                            {viewerState.isLoading && (
-                                <div className="loading-overlay" style={{display: 'flex'}}>
-                                    <div className="loading-spinner"></div>
-                                    <div className="loading-text">Cargando juego...</div>
-                                    <button className="skip-btn" onClick={() => setViewerState(prev => ({...prev, isLoading: false}))}>Saltar</button>
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
+                    {/* Pantalla de carga superpuesta */}
+                    <div 
+                        className="loading-overlay" 
+                        style={{ display: viewerState.isLoading ? 'flex' : 'none' }}
+                    >
+                        <div className="loading-spinner"></div>
+                        <div className="loading-text">Cargando juego...</div>
+                        <button className="skip-btn" onClick={() => setViewerState(prev => ({...prev, isLoading: false}))}>Saltar</button>
+                    </div>
+                </div>
             </div>
 
             {/* TODOS LOS ESTILOS INCLUIDOS EN EL MISMO ARCHIVO */}
@@ -503,14 +516,15 @@ export default function NotilatGaming() {
                 .footer-section p { font-size: 13px; line-height: 1.6; color: #b2bec3; }
                 .footer-bottom { text-align: center; padding-top: 20px; border-top: 1px solid #636e72; font-size: 14px; }
 
-                /* CSS DEL VISOR RESTAURADO EXACTAMENTE AL ORIGINAL PARA EVITAR BLOQUEOS TÁCTILES */
+                /* CSS DEFINITIVO PARA MÓVILES (FLEX-GROW y 100DVH) */
                 .game-viewer { 
                     position: fixed; 
                     top: 0; 
                     left: 0; 
                     width: 100%; 
-                    height: 100%; 
-                    background-color: white; 
+                    height: 100vh; /* Fallback para navegadores antiguos */
+                    height: 100dvh; /* Medida dinámica exacta para Safari/Chrome móvil */
+                    background-color: #000; 
                     z-index: 1000; 
                     flex-direction: column; 
                 }
@@ -522,6 +536,7 @@ export default function NotilatGaming() {
                     align-items: center; 
                     background: linear-gradient(45deg, var(--primary), var(--secondary)); 
                     color: white; 
+                    flex-shrink: 0; /* Asegura que el header nunca se achique */
                 }
                 
                 .viewer-title { font-weight: 600; font-size: 18px; }
@@ -545,9 +560,9 @@ export default function NotilatGaming() {
                 
                 .game-iframe { 
                     width: 100%; 
-                    height: calc(100% - 60px); 
+                    flex-grow: 1; /* Esto fuerza al iframe a llenar el resto de la pantalla en cualquier móvil */
                     border: none; 
-                    background-color: #f0f0f0; 
+                    background-color: #000; 
                 }
                 
                 .loading-overlay { 
@@ -561,11 +576,12 @@ export default function NotilatGaming() {
                     align-items: center; 
                     justify-content: center; 
                     color: white; 
+                    z-index: 10;
                 }
                 
                 .loading-spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
                 .skip-btn { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; margin-top: 20px; }
-                .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 999; }
+                .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 999; }
 
                 @keyframes spin { to { transform: rotate(360deg); } }
 

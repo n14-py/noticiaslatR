@@ -252,7 +252,7 @@ export default function NotilatGaming() {
                 <title>NOTILAT Gaming - Juegos y Diversión Gratis Online</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                 <meta name="description" content="Juega los mejores juegos gratis en línea en NOTILAT Gaming. Acción, aventura, puzzle y más. Plataforma 100% gratuita." />
-                
+                <meta name="google-adsense-account" content="ca-pub-5461370198299696"></meta>
                 {/* Script de verificación de Google AdSense */}
                 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696" crossorigin="anonymous"></script>
 

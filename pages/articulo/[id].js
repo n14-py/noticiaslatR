@@ -8,7 +8,7 @@ import Layout from '../../components/Layout';
 export const runtime = 'experimental-edge';
 
 // URL API
-const API_URL = 'http://185.190.140.189:3000';
+const API_URL = 'http://185.190.140.189';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
 // --- 1. SERVER SIDE PROPS ---

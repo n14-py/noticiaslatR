@@ -1,4 +1,4 @@
-const API_URL = 'http://185.190.140.189:3000';
+const API_URL = 'http://185.190.140.189';
 const SITIO = 'noticias.lat';
 const BASE_URL = 'https://www.noticias.lat';
 

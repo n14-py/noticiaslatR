@@ -33,17 +33,17 @@ const nextConfig = {
       // 1. Índice Principal
       {
         source: '/sitemap.xml',
-        destination: 'http://185.190.140.189:3000/api/sitemap.xml',
+        destination: 'http://185.190.140.189/api/sitemap.xml',
       },
       // 2. Sitemap Estático
       {
         source: '/sitemap-static.xml',
-        destination: 'http://185.190.140.189:3000/api/sitemap-static.xml',
+        destination: 'http://185.190.140.189/api/sitemap-static.xml',
       },
       // 3. Sitemaps Dinámicos de Noticias (Paginados: 1, 2, 3...)
       {
         source: '/sitemap-noticias-:page.xml',
-        destination: 'http://185.190.140.189:3000/api/sitemap-noticias-:page.xml',
+        destination: 'http://185.190.140.189/api/sitemap-noticias-:page.xml',
       },
       // 4. Robots.txt real
       {

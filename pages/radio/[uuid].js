@@ -6,7 +6,7 @@ import { usePlayer } from '../../context/PlayerContext';
 // --- CONFIGURACIÓN CLOUDFLARE (Fijo para evitar errores) ---
 export const runtime = 'experimental-edge';
 
-const API_URL = 'http://185.190.140.189:3000/api';
+const API_URL = 'http://185.190.140.189/api';
 const PLACEHOLDER_LOGO = '/images/placeholder.jpg';
 
 // --- SERVIDOR: BUSCAR DATOS ---

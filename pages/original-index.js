@@ -8,7 +8,7 @@ import Layout from '../components/Layout';
 export const runtime = 'experimental-edge';
 
 // --- CONFIGURACIÓN ---
-const API_URL = 'http://185.190.140.189:3000';
+const API_URL = 'http://185.190.140.189';
 const SITE_NAME = 'Noticias.lat';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 

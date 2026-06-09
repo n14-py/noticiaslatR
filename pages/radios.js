@@ -8,7 +8,7 @@ import { usePlayer } from '../context/PlayerContext';
 // --- CONFIGURACIÓN CLOUDFLARE (Comentar con // en local si da error) ---
 export const runtime = 'experimental-edge';
 
-const API_URL = 'http://185.190.140.189/api';
+const API_URL = 'https://api.noticias.lat/api';
 const PLACEHOLDER_LOGO = '/images/placeholder.jpg'; 
 const LIMITE_POR_PAGINA = 30; // Aumentamos un poco para ver más radios
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import Layout from '../components/Layout';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://185.190.140.189/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.noticias.lat/api';
 
 function MiembrosDashboard() {
   const [user, setUser] = useState(null);

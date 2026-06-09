@@ -7,7 +7,7 @@ import { useRouter } from 'next/router';
 // Configuración Edge
 export const runtime = 'experimental-edge';
 
-const API_URL = 'https://lfaftechapi-7nrb.onrender.com';
+const API_URL = 'http://185.190.140.189:3000';
 const SITIO = 'noticias.lat';
 
 // --- 1. CARGA DE DATOS (Caché 24h) ---

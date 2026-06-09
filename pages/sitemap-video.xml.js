@@ -1,4 +1,4 @@
-const API_URL = 'https://lfaftechapi-7nrb.onrender.com';
+const API_URL = 'http://185.190.140.189:3000';
 const SITIO = 'noticias.lat';
 const BASE_URL = 'https://www.noticias.lat';
 

@@ -247,9 +247,9 @@ export default function Articulo({ article, recommended }) {
                             </div>
                             <div className="ai-summary-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', color: '#1d4ed8', fontWeight: '900', fontSize: '1.2rem', position: 'relative', zIndex: 1 }}>
                                 <div style={{ background: '#dbeafe', padding: '8px 12px', borderRadius: '8px' }}>
-                                    <i className="fas fa-robot"></i>
+                                    <i className="fas fa-file-alt"></i>
                                 </div>
-                                <span>Resumen IA</span>
+                                <span>Puntos Claves</span>
                             </div>
                             
                             <div style={{ position: 'relative', zIndex: 1 }}>

@@ -4,26 +4,28 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 
-// Configuración Edge
+// Configuracion Edge para máxima velocidad en Cloudflare
 export const runtime = 'experimental-edge';
 
-// --- CONFIGURACIÓN ---
+// --- CONFIGURACION ---
 const API_URL = 'https://api.noticias.lat';
 const SITE_NAME = 'Noticias.lat';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
 // --- 1. SERVER SIDE PROPS ---
 export async function getServerSideProps(context) {
+    // CACHÉ EXTREMO: 30 Minutos en Cloudflare para que la web vuele
     context.res.setHeader(
         'Cache-Control',
-        'public, s-maxage=60, stale-while-revalidate=86400'
+        'public, s-maxage=1800, stale-while-revalidate=86400'
     );
 
     const { query } = context;
     const page = parseInt(query.page || '1', 10);
-    const limit = 13; 
+    const limit = 13;
     
-    let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&page=${page}&limit=${limit}`;
+    // CORRECCIÓN DE PAGINACIÓN: El backend espera "pagina", no "page"
+    let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&pagina=${page}&limite=${limit}`;
     
     if (query.categoria && query.categoria !== 'todos') {
         endpoint += `&categoria=${query.categoria}`;
@@ -52,7 +54,7 @@ export async function getServerSideProps(context) {
             props: {
                 initialArticles: articles,
                 pagination: {
-                    currentPage: data.paginaActual || data.page || 1,
+                    currentPage: data.paginaActual || data.page || page,
                     totalPages: data.totalPaginas || data.totalPages || 1,
                     totalArticles: data.totalArticulos || data.totalDocs || 0
                 },
@@ -79,16 +81,20 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
     
     useEffect(() => {
         const handleStart = () => setLoading(true);
-        const handleComplete = () => setLoading(false);
+        const handleComplete = () => {
+            setLoading(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        const handleError = () => setLoading(false);
 
         router.events.on('routeChangeStart', handleStart);
         router.events.on('routeChangeComplete', handleComplete);
-        router.events.on('routeChangeError', handleComplete);
+        router.events.on('routeChangeError', handleError);
 
         return () => {
             router.events.off('routeChangeStart', handleStart);
             router.events.off('routeChangeComplete', handleComplete);
-            router.events.off('routeChangeError', handleComplete);
+            router.events.off('routeChangeError', handleError);
         };
     }, [router]);
 
@@ -107,14 +113,12 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
     return (
         <Layout>
             <Head>
-                {/* CORREGIDO: Usamos template literals para un solo string */}
                 <title>{`${titleText} - ${SITE_NAME}`}</title>
                 <meta name="description" content={`Mantente informado con las últimas noticias de ${titleText} en Noticias.lat. Cobertura global y actualizaciones al minuto.`} />
                 <link rel="canonical" href={`https://www.noticias.lat${router.asPath.split('?')[0]}`} />
             </Head>
 
             <div className="container main-content">
-                
                 <div style={{ marginBottom: '2rem', marginTop: '1rem' }}>
                     <h1 style={{ 
                         fontSize: '2rem', 
@@ -127,11 +131,15 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                     </h1>
                 </div>
 
-                {loading ? (
-                    <SkeletonGrid />
-                ) : (
-                    <>
-                        {initialArticles && initialArticles.length > 0 ? (
+                <div style={{
+                    opacity: loading ? 0.5 : 1,
+                    transition: 'opacity 0.3s ease',
+                    pointerEvents: loading ? 'none' : 'auto'
+                }}>
+                    {error || (initialArticles && initialArticles.length === 0) ? (
+                        <EmptyState />
+                    ) : (
+                        <>
                             <div className="bento-grid">
                                 {initialArticles.map((article, index) => {
                                     const isHero = (index === 0 && pagination.currentPage === 1);
@@ -144,19 +152,17 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                                     );
                                 })}
                             </div>
-                        ) : (
-                            <EmptyState />
-                        )}
 
-                        {initialArticles && initialArticles.length > 0 && (
-                            <Pagination 
-                                currentPage={pagination.currentPage} 
-                                totalPages={pagination.totalPages} 
-                                query={router.query}
-                            />
-                        )}
-                    </>
-                )}
+                            {initialArticles && initialArticles.length > 0 && (
+                                <Pagination 
+                                    currentPage={pagination.currentPage} 
+                                    totalPages={pagination.totalPages} 
+                                    query={router.query} 
+                                />
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
         </Layout>
     );
@@ -190,7 +196,6 @@ function ArticleCard({ article, isHero }) {
                     </div>
                 )}
             </Link>
-
             <div className="card-content">
                 <div className="card-tags">
                     <span className="tag">{article.categoria}</span>
@@ -202,11 +207,9 @@ function ArticleCard({ article, isHero }) {
                         {article.titulo}
                     </Link>
                 </h3>
-
                 <p className="card-excerpt">
                     {article.descripcion ? article.descripcion.substring(0, isHero ? 200 : 100) + '...' : ''}
                 </p>
-
                 <div className="card-meta">
                     <span><i className="far fa-clock"></i> {fecha}</span>
                 </div>
@@ -215,34 +218,14 @@ function ArticleCard({ article, isHero }) {
     );
 }
 
-function SkeletonGrid() {
-    return (
-        <div className="bento-grid">
-            <div className="article-card hero-item" style={{ border: 'none', boxShadow: 'none' }}>
-                <div className="skeleton skeleton-img" style={{ height: '100%' }}></div>
-            </div>
-            {[...Array(6)].map((_, i) => (
-                <div key={i} className="article-card" style={{ border: 'none', boxShadow: 'none' }}>
-                    <div className="skeleton skeleton-img" style={{ height: '180px' }}></div>
-                    <div style={{ padding: '1rem' }}>
-                        <div className="skeleton skeleton-title"></div>
-                        <div className="skeleton skeleton-title" style={{ width: '60%' }}></div>
-                        <div className="skeleton skeleton-text"></div>
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
 function EmptyState() {
     return (
         <div className="no-articles-message" style={{ textAlign: 'center', padding: '4rem' }}>
             <i className="fas fa-newspaper" style={{ fontSize: '3rem', marginBottom: '1rem', color: '#cbd5e1' }}></i>
-            <h3>No se encontraron noticias</h3>
-            <p>Estamos actualizando nuestro feed. Vuelve en unos minutos.</p>
-            <Link href="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block', color: 'var(--color-primario)', fontWeight: 'bold' }}>
-                Recargar Página
+            <h3 style={{ fontSize: '1.5rem', color: 'var(--color-texto-titulos)' }}>No se encontraron noticias</h3>
+            <p style={{ color: 'var(--color-texto-suave)' }}>Estamos actualizando nuestro feed. Vuelve en unos minutos.</p>
+            <Link href="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block', background: 'var(--color-primario)', color: 'white', padding: '10px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: 'bold' }}>
+                Recargar Portada
             </Link>
         </div>
     );
@@ -254,26 +237,32 @@ function Pagination({ currentPage, totalPages, query }) {
     const createPageLink = (page) => {
         const newQuery = { ...query, page };
         const params = new URLSearchParams();
-        Object.keys(newQuery).forEach(key => params.append(key, newQuery[key]));
+        Object.keys(newQuery).forEach(key => {
+            if (newQuery[key]) params.append(key, newQuery[key]);
+        });
         return `/?${params.toString()}`;
     };
 
     return (
-        <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '3rem', paddingBottom: '2rem' }}>
-            {currentPage > 1 && (
-                <Link href={createPageLink(currentPage - 1)} style={{ marginRight: '1rem', fontWeight: 'bold' }}>
+        <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '4rem', paddingBottom: '2rem', gap: '15px' }}>
+            {currentPage > 1 ? (
+                <Link href={createPageLink(currentPage - 1)} className="pagination-btn">
                     <i className="fas fa-chevron-left"></i> Anterior
                 </Link>
+            ) : (
+                <span className="pagination-btn disabled"><i className="fas fa-chevron-left"></i> Anterior</span>
             )}
-
-            <span className="page-info" style={{ color: '#64748b' }}>
+            
+            <span className="page-info" style={{ color: 'var(--color-texto-suave)', fontWeight: '600' }}>
                 Página {currentPage} de {totalPages}
             </span>
 
-            {currentPage < totalPages && (
-                <Link href={createPageLink(currentPage + 1)} style={{ marginLeft: '1rem', fontWeight: 'bold' }}>
+            {currentPage < totalPages ? (
+                <Link href={createPageLink(currentPage + 1)} className="pagination-btn">
                     Siguiente <i className="fas fa-chevron-right"></i>
                 </Link>
+            ) : (
+                <span className="pagination-btn disabled">Siguiente <i className="fas fa-chevron-right"></i></span>
             )}
         </div>
     );

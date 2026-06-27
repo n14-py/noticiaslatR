@@ -214,7 +214,7 @@ export default function ArticuloPage({ article, recommended, latestNews }) {
                             ) : (
                                 <div style={{ padding: '1.5rem', background: 'var(--color-primario-light)', borderRadius: '8px', border: '1px solid var(--color-primario)', color: 'var(--color-texto-cuerpo)', animation: 'fadeIn 0.5s ease-out' }}>
                                     <h4 style={{ margin: '0 0 10px 0', color: 'var(--color-primario)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
-                                        <i className="fas fa-robot"></i> Resumen Inteligente
+                                        <i className="fas fa-file-alt"></i> Puntos Clave Noticias.LAT
                                     </h4>
                                     <p style={{ margin: 0, lineHeight: '1.6' }}>{summary}</p>
                                 </div>

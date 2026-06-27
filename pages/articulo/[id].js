@@ -1,259 +1,224 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 
-// Configuración Edge
+// Obligatorio para el funcionamiento actual en Cloudflare
 export const runtime = 'experimental-edge';
 
-// URL API
 const API_URL = 'https://api.noticias.lat';
-const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
-// --- 1. SERVER SIDE PROPS ---
 export async function getServerSideProps(context) {
-    const { id } = context.params;
-    
+    // Caché puro en el Edge de Cloudflare: 30 minutos (1800 segundos)
     context.res.setHeader(
         'Cache-Control',
-        'public, s-maxage=86400, stale-while-revalidate=3600'
+        'public, s-maxage=1800, stale-while-revalidate=86400'
     );
 
-    try {
-        const res = await fetch(`${API_URL}/api/article/${id}`);
-        if (!res.ok) return { notFound: true };
-        const article = await res.json();
+    const { id } = context.params;
 
-        // Cargar Recomendados (Ahora traerá hasta 12 si el backend está actualizado)
+    try {
+        const resArt = await fetch(`${API_URL}/api/article/${id}`);
+        if (!resArt.ok) return { notFound: true };
+        const article = await resArt.json();
+
+        // Obtener noticias similares (recomendadas) para el nuevo diseño lateral
+        const resRec = await fetch(`${API_URL}/api/articles/recommended?sitio=noticias.lat&categoria=${article.categoria || 'general'}&excludeId=${id}`);
         let recommended = [];
-        try {
-            const sitio = article.sitio || 'noticias.lat';
-            const cat = article.categoria || 'general';
-            const recommendedUrl = `${API_URL}/api/articles/recommended?sitio=${sitio}&categoria=${cat}&excludeId=${article._id}`;
-            const resRec = await fetch(recommendedUrl);
-            if (resRec.ok) {
-                recommended = await resRec.json();
-            }
-        } catch (error) {
-            console.error("Error cargando recomendados:", error);
+        if (resRec.ok) {
+            recommended = await resRec.json();
         }
 
-        return { props: { article, recommended } };
+        return {
+            props: {
+                article,
+                recommended
+            }
+        };
     } catch (error) {
-        console.error("Error en getServerSideProps:", error);
+        console.error("Error fetching article:", error);
         return { notFound: true };
     }
 }
 
-// --- 2. COMPONENTE PRINCIPAL ---
-export default function Articulo({ article, recommended }) {
+export default function ArticuloPage({ article, recommended }) {
     const router = useRouter();
-    const [scrollProgress, setScrollProgress] = useState(0);
+    const [summary, setSummary] = useState(article.aiSummary || null);
+    const [loadingSummary, setLoadingSummary] = useState(false);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            const totalHeight = document.body.scrollHeight - window.innerHeight;
-            if (totalHeight > 0) {
-                const progress = (window.scrollY / totalHeight) * 100;
-                setScrollProgress(progress);
+    const fetchAISummary = async () => {
+        setLoadingSummary(true);
+        try {
+            const res = await fetch(`${API_URL}/api/article/${article._id}/ai-summary`);
+            const data = await res.json();
+            if (data.summary) {
+                setSummary(data.summary);
             }
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        } catch (error) {
+            console.error("Error obteniendo resumen IA:", error);
+        }
+        setLoadingSummary(false);
+    };
 
     if (router.isFallback) {
-        return (
-            <Layout>
-                <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>
-                    <h2>Cargando noticia...</h2>
-                    <div className="skeleton" style={{ width: '100%', height: '300px', marginTop: '20px' }}></div>
-                </div>
-            </Layout>
-        );
+        return <div style={{ textAlign: 'center', padding: '5rem' }}>Cargando...</div>;
     }
 
-    // Limpieza de texto
-    let contenidoFinal = [];
-    if (article.articuloGenerado) {
-        const textoLimpio = article.articuloGenerado
-            .replace(/##\s/g, '').replace(/\*\*/g, '').replace(/\* /g, '')
-            .replace(/[^\x00-\x7F\ñ\Ñ\á\é\í\ó\ú\Á\É\Í\Ó\Ú\¿\¡]/g, ' ');
-        contenidoFinal = textoLimpio.split('\n').filter(p => p.trim() !== '');
-    } else if (article.contenido) {
-        const contenidoLimpio = article.contenido.split(' [')[0]; 
-        contenidoFinal = contenidoLimpio.split('\n').filter(p => p.trim() !== '');
-    } else {
-        contenidoFinal = [article.descripcion || 'Contenido no disponible.'];
-    }
-
-    const fecha = new Date(article.fecha).toLocaleDateString('es-ES', { 
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    const fechaFormat = new Date(article.fecha).toLocaleDateString('es-ES', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-    const finalImageUrl = (article.imagen && article.imagen.startsWith('http')) ? article.imagen : PLACEHOLDER_IMG;
-    const hasVideo = (article.youtubeId && article.videoProcessingStatus === 'complete');
-    const canonicalUrl = `https://www.noticias.lat/articulo/${article._id}`;
 
     return (
         <Layout>
             <Head>
                 <title>{article.titulo} - Noticias.lat</title>
-                <meta name="description" content={article.descripcion ? article.descripcion.substring(0, 160) : article.titulo} />
-                <meta property="og:image" content={finalImageUrl} />
+                <meta name="description" content={article.descripcion} />
+                <meta property="og:image" content={article.imagen} />
                 <meta property="og:title" content={article.titulo} />
-                <link rel="canonical" href={canonicalUrl} />
+                <meta property="og:description" content={article.descripcion} />
             </Head>
 
-            <div className="reading-progress-container">
-                <div className="reading-progress-bar" style={{ width: `${scrollProgress}%` }}></div>
-            </div>
-
-            <article className="container article-page-container">
+            <div className="container" style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', margin: '3rem auto', paddingBottom: '5rem' }}>
                 
-                {/* HEADER */}
-                <header className="article-header">
-                    <Link href={`/?categoria=${article.categoria}`} className="article-category-badge">
-                        {article.categoria || 'General'}
-                    </Link>
-                    <h1 className="article-title-main">{article.titulo}</h1>
-                    <div className="article-meta-row">
-                        <span className="meta-item"><i className="far fa-calendar-alt"></i> {fecha}</span>
-                        {/* Se mantiene el "Según" arriba, esto está bien */}
-                        {article.fuente && <span className="meta-item source-badge">Según: {article.fuente}</span>}
-                        <span className="meta-item"><i className="far fa-clock"></i> Lectura rápida</span>
-                    </div>
-                </header>
-
-                {/* IMAGEN HERO */}
-                <div className="article-hero-image">
-                    <img src={finalImageUrl} alt={article.titulo} onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }} />
-                </div>
-
-                {/* BOTÓN DE VIDEO */}
-                {hasVideo && (
-                    <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                        <Link href={`/feed?start_id=${article._id}`} className="btn-video-floating" style={{ display: 'inline-flex', width: 'auto', padding: '15px 30px' }}>
-                            <i className="fas fa-play-circle" style={{ color: '#ef4444', fontSize: '1.5rem' }}></i> 
-                            <div style={{ textAlign: 'left' }}>
-                                <span style={{ display: 'block', fontSize: '0.8rem', opacity: 0.8, fontWeight: 400 }}>AudioNoticia Disponible</span>
-                                Ver en Video (Formato TikTok)
-                            </div>
-                        </Link>
-                    </div>
-                )}
-
-                {/* CUERPO NOTICIA */}
-                <div className="article-body-content">
-                    {contenidoFinal.map((parrafo, index) => (
-                        <p key={index}>{parrafo}</p>
-                    ))}
-                </div>
-
-                {/* BOTONES DE COMPARTIR */}
-                <div className="share-section">
-                    <h4 style={{ marginBottom: '1rem', color: 'var(--color-texto-suave)' }}>Compartir esta noticia:</h4>
-                    <div className="share-buttons-grid">
-                        <ShareButton platform="whatsapp" url={canonicalUrl} title={article.titulo} />
-                        <ShareButton platform="facebook" url={canonicalUrl} title={article.titulo} />
-                        <ShareButton platform="twitter" url={canonicalUrl} title={article.titulo} />
-                        <ShareButton platform="email" url={canonicalUrl} title={article.titulo} />
-                    </div>
-                </div>
-
-                {/* ELIMINADO: La caja gris de "Leer fuente original". 
-                    Ya no aparecerá abajo como pediste. */}
-
-            </article>
-
-            {/* --- SECCIÓN NUEVA: PROMO NEWSLETTER (LO QUE FALTABA) --- */}
-            {/* Esta sección llena el vacío visual antes de las recomendaciones */}
-            <section style={{ 
-                background: 'linear-gradient(135deg, var(--color-tech-bg) 0%, #1e40af 100%)', 
-                color: 'white', 
-                padding: '4rem 1rem', 
-                textAlign: 'center',
-                marginTop: '4rem'
-            }}>
-                <div className="container" style={{ maxWidth: '600px' }}>
-                    <i className="fas fa-paper-plane" style={{ fontSize: '2rem', marginBottom: '1rem', opacity: 0.8 }}></i>
-                    <h3 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '1rem', fontFamily: 'var(--font-sans)' }}>
-                        ¿Te gusta estar informado?
-                    </h3>
-                    <p style={{ fontSize: '1.1rem', marginBottom: '2rem', opacity: 0.9 }}>
-                        Recibe las noticias más importantes de Latinoamérica directamente en Telegram. Sin Spam, solo realidad.
-                    </p>
-                    <Link href="https://t.me/s/noticiaslat" style={{ 
-                        background: 'white', color: 'var(--color-primario)', padding: '12px 30px', 
-                        borderRadius: '50px', fontWeight: '700', fontSize: '1rem', display: 'inline-block' 
-                    }}>
-                        Unirme Gratis
-                    </Link>
-                </div>
-            </section>
-            {/* -------------------------------------------------------- */}
-
-
-            {/* SECCIÓN DE RECOMENDADOS (AHORA CON 12 ITEMS) */}
-            {recommended && recommended.length > 0 && (
-                <section style={{ background: '#f8fafc', padding: '5rem 0' }}>
-                    <div className="container">
-                        <h2 style={{ 
-                            marginBottom: '3rem', fontFamily: 'var(--font-sans)', 
-                            color: 'var(--color-texto-titulos)', textAlign: 'center', fontSize: '2rem', fontWeight: '800' 
-                        }}>
-                            Sigue Leyendo
-                        </h2>
+                {/* COLUMNA IZQUIERDA: CONTENIDO PRINCIPAL */}
+                <article style={{ flex: '1 1 65%', minWidth: '300px' }}>
+                    <div className="article-header" style={{ textAlign: 'left', marginBottom: '2rem' }}>
+                        <span className="article-category-badge" style={{ marginBottom: '1rem' }}>
+                            {article.categoria}
+                        </span>
+                        <h1 className="article-title-main" style={{ textAlign: 'left', fontSize: '2.5rem' }}>
+                            {article.titulo}
+                        </h1>
                         
-                        {/* Grid ajustado para muchas noticias */}
-                        <div className="bento-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-                            {recommended.map(rec => (
-                                <div key={rec._id} className="article-card" style={{ height: '100%' }}>
-                                    <Link href={`/articulo/${rec._id}`} className="card-image-wrapper" style={{ height: '200px' }}>
-                                        <img 
-                                            src={rec.imagen || PLACEHOLDER_IMG} 
-                                            alt={rec.titulo}
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
-                                        />
-                                    </Link>
-                                    <div className="card-content">
-                                        <div className="card-tags">
-                                            <span className="tag">{rec.categoria}</span>
-                                        </div>
-                                        <h3 className="card-title" style={{ fontSize: '1.1rem' }}>
-                                            <Link href={`/articulo/${rec._id}`}>{rec.titulo}</Link>
-                                        </h3>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="article-meta-row" style={{ justifyContent: 'flex-start', margin: '1.5rem 0', padding: '1rem 0' }}>
+                            <div className="meta-item">
+                                <i className="far fa-clock"></i> {fechaFormat}
+                            </div>
+                            <div className="meta-item source-badge">
+                                Fuente: {article.fuente || 'Redacción'}
+                            </div>
                         </div>
                     </div>
-                </section>
-            )}
+
+                    <div className="article-hero-image">
+                        <img src={article.imagen} alt={article.titulo} style={{ width: '100%', borderRadius: '12px', objectFit: 'cover' }} />
+                    </div>
+
+                    {/* REPRODUCTOR DE AUDIO (AUDIONOTICIAS) */}
+                    {article.audioUrl && (
+                        <div style={{ margin: '2rem 0', padding: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid var(--color-borde)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <h4 style={{ margin: '0', fontSize: '1rem', color: 'var(--color-texto-titulos)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="fas fa-headphones" style={{ color: 'var(--color-primario)' }}></i> Escucha esta noticia
+                            </h4>
+                            <audio controls style={{ width: '100%', outline: 'none' }} src={article.audioUrl}>
+                                Tu navegador no soporta el elemento de audio.
+                            </audio>
+                        </div>
+                    )}
+
+                    {/* BOTÓN RESUMEN IA */}
+                    <div style={{ margin: '2rem 0' }}>
+                        {!summary ? (
+                            <button 
+                                onClick={fetchAISummary} 
+                                disabled={loadingSummary} 
+                                style={{ 
+                                    background: 'var(--color-primario)', 
+                                    color: 'white', 
+                                    padding: '12px 24px', 
+                                    borderRadius: '8px', 
+                                    border: 'none', 
+                                    cursor: 'pointer', 
+                                    fontWeight: '700',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    transition: 'opacity 0.2s'
+                                }}
+                            >
+                                <i className="fas fa-robot"></i> {loadingSummary ? 'Procesando lectura...' : 'Resumir con IA'}
+                            </button>
+                        ) : (
+                            <div style={{ padding: '1.5rem', background: 'var(--color-primario-light)', borderRadius: '8px', border: '1px solid var(--color-primario)', color: 'var(--color-texto-cuerpo)' }}>
+                                <h4 style={{ margin: '0 0 10px 0', color: 'var(--color-primario)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <i className="fas fa-robot"></i> Resumen Inteligente
+                                </h4>
+                                <p style={{ margin: 0, lineHeight: '1.6' }}>{summary}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* CUERPO DEL ARTÍCULO */}
+                    <div 
+                        className="article-body-content" 
+                        style={{ marginTop: '2rem' }}
+                        dangerouslySetInnerHTML={{ __html: article.articuloGenerado ? article.articuloGenerado.replace(/\n/g, '<br/><br/>') : article.descripcion }} 
+                    />
+
+                    {/* VIDEO DE YOUTUBE AL FINAL */}
+                    {article.youtubeId && article.videoProcessingStatus === 'complete' && (
+                        <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--color-borde)' }}>
+                            <h3 style={{ marginBottom: '1.5rem', color: 'var(--color-texto-titulos)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <i className="fab fa-youtube" style={{ color: '#ff0000' }}></i> Cobertura en Video
+                            </h3>
+                            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px', boxShadow: 'var(--sombra-md)' }}>
+                                <iframe 
+                                    src={`https://www.youtube.com/embed/${article.youtubeId}`} 
+                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} 
+                                    frameBorder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* SECCIÓN COMPARTIR */}
+                    <div className="share-section" style={{ marginTop: '3rem' }}>
+                        <h4>Compartir esta noticia</h4>
+                        <div className="share-buttons-grid">
+                            <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(article.titulo + ' ' + API_URL + '/articulo/' + article._id)}`} target="_blank" rel="noreferrer" className="share-btn-whatsapp" style={{ padding: '10px 15px', borderRadius: '8px', color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>
+                                <i className="fab fa-whatsapp"></i> WhatsApp
+                            </a>
+                            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.titulo)}&url=${encodeURIComponent(API_URL + '/articulo/' + article._id)}`} target="_blank" rel="noreferrer" className="share-btn-twitter" style={{ padding: '10px 15px', borderRadius: '8px', color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>
+                                <i className="fab fa-twitter"></i> X (Twitter)
+                            </a>
+                            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(API_URL + '/articulo/' + article._id)}`} target="_blank" rel="noreferrer" className="share-btn-facebook" style={{ padding: '10px 15px', borderRadius: '8px', color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>
+                                <i className="fab fa-facebook-f"></i> Facebook
+                            </a>
+                        </div>
+                    </div>
+                </article>
+
+                {/* COLUMNA DERECHA: NOTICIAS SIMILARES FIJAS */}
+                <aside style={{ flex: '1 1 30%', minWidth: '300px' }}>
+                    <div style={{ position: 'sticky', top: '100px' }}>
+                        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--color-texto-titulos)', borderBottom: '2px solid var(--color-primario)', paddingBottom: '10px' }}>
+                            Noticias Similares
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            {recommended.length > 0 ? recommended.map(rec => (
+                                <Link href={`/articulo/${rec._id}`} key={rec._id} style={{ display: 'flex', gap: '15px', textDecoration: 'none', color: 'inherit', alignItems: 'center' }}>
+                                    <div style={{ width: '100px', height: '80px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden' }}>
+                                        <img src={rec.imagen} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rec.titulo} />
+                                    </div>
+                                    <div>
+                                        <h4 style={{ fontSize: '0.95rem', margin: '0 0 5px 0', lineHeight: '1.4', color: 'var(--color-texto-titulos)' }}>
+                                            {rec.titulo.length > 60 ? rec.titulo.substring(0, 60) + '...' : rec.titulo}
+                                        </h4>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-suave)', textTransform: 'uppercase', fontWeight: '600' }}>
+                                            {rec.categoria}
+                                        </span>
+                                    </div>
+                                </Link>
+                            )) : (
+                                <p style={{ color: 'var(--color-texto-suave)', fontSize: '0.9rem' }}>No hay noticias similares por el momento.</p>
+                            )}
+                        </div>
+                    </div>
+                </aside>
+            </div>
         </Layout>
-    );
-}
-
-// Botón Compartir
-function ShareButton({ platform, url, title }) {
-    let href = ''; let icon = ''; let color = ''; let label = '';
-    const encodedUrl = encodeURIComponent(url);
-    const encodedTitle = encodeURIComponent(title);
-
-    switch(platform) {
-        case 'whatsapp': href = `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`; icon = 'fab fa-whatsapp'; color = '#25D366'; label = 'WhatsApp'; break;
-        case 'facebook': href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`; icon = 'fab fa-facebook-f'; color = '#1877F2'; label = 'Facebook'; break;
-        case 'twitter': href = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`; icon = 'fab fa-twitter'; color = '#1DA1F2'; label = 'X'; break;
-        case 'email': href = `mailto:?subject=${encodedTitle}&body=Mira esta noticia: ${encodedUrl}`; icon = 'fas fa-envelope'; color = '#64748b'; label = 'Email'; break;
-    }
-
-    return (
-        <a href={href} target="_blank" rel="noopener noreferrer" style={{
-            background: color, color: 'white', padding: '10px 18px', borderRadius: '6px',
-            textDecoration: 'none', fontSize: '0.9rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px'
-        }}>
-            <i className={icon}></i> {label}
-        </a>
     );
 }

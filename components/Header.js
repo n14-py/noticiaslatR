@@ -6,21 +6,23 @@ export default function Header() {
     const [menuActivo, setMenuActivo] = useState(false);
     const [paisesOpen, setPaisesOpen] = useState(false);
     const router = useRouter();
-    const { categoria, pais } = router.query;
+    const { categoria, pais, tab } = router.query;
 
     const closeMenu = () => {
         setMenuActivo(false);
         setPaisesOpen(false);
     };
 
-    // Lógica para saber qué botón del menú está activo (azul)
+    // Lógica para saber qué botón del menú está activo
     let activeKey = categoria || pais || 'todos';
     
-    // Si estamos en la página de videos
-    if (router.pathname === '/feed') activeKey = 'feed';
+    // Si estamos en la página de radios o podcasts
+    if (router.pathname.startsWith('/radio')) {
+        activeKey = tab === 'podcasts' ? 'podcasts' : 'radios';
+    }
     
-    // --- NUEVO: Si estamos en cualquier página de radio (lista o detalle) ---
-    if (router.pathname.startsWith('/radio')) activeKey = 'radios';
+    // Si estamos en la Zona Gamer
+    if (router.pathname.startsWith('/juegos')) activeKey = 'juegos';
     
     // Páginas estáticas
     if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
@@ -33,7 +35,7 @@ export default function Header() {
 
     return (
         <>
-            {/* 1. TICKER SUPERIOR (SIN IA) */}
+            {/* 1. TICKER SUPERIOR */}
             <div className="news-ticker-bar">
                 <div className="container ticker-flex">
                     <span className="ticker-label">ÚLTIMA HORA</span>
@@ -55,16 +57,23 @@ export default function Header() {
                     </Link>
                     
                     <ul className="nav-links desktop-menu">
+                        {/* NUEVO: Botón Podcast / Audio reemplazando el Feed */}
                         <li>
-                            <Link href="/feed" className={`nav-link-video ${activeKey === 'feed' ? 'active' : ''}`}>
-                                <span className="pulse-icon">●</span> Video Feed
+                            <Link href="/radios?tab=podcasts" className={`nav-link-audio ${activeKey === 'podcasts' ? 'active' : ''}`}>
+                                <i className="fas fa-podcast"></i> Podcast / Audio
                             </Link>
                         </li>
 
-                        {/* --- NUEVO BOTÓN RADIOS (DESKTOP) --- */}
                         <li>
                             <Link href="/radios" className={getLinkClass('radios')}>
                                 <i className="fas fa-broadcast-tower"></i> Radios
+                            </Link>
+                        </li>
+
+                        {/* NUEVO: Enlace a Zona Gamer */}
+                        <li>
+                            <Link href="/juegos" className={getLinkClass('juegos')}>
+                                <i className="fas fa-gamepad"></i> Juegos
                             </Link>
                         </li>
 
@@ -119,7 +128,6 @@ export default function Header() {
 
                         <li><Link href="/?categoria=tecnologia" className={getLinkClass('tecnologia')}>Tech</Link></li>
                         <li><Link href="/?categoria=deportes" className={getLinkClass('deportes')}>Deportes</Link></li>
-                        <li><Link href="/?categoria=entretenimiento" className={getLinkClass('entretenimiento')}>Show</Link></li>
                     </ul>
 
                     <button 
@@ -142,19 +150,23 @@ export default function Header() {
                 </div>
 
                 <div className="mobile-scroll-content">
-                    <Link href="/feed" className="mobile-video-btn" onClick={closeMenu}>
-                        <i className="fas fa-play-circle"></i> Ver AudioNoticias (Feed)
+                    {/* Botón Principal Móvil (Podcast / Audio) */}
+                    <Link href="/radios?tab=podcasts" className="mobile-video-btn" onClick={closeMenu} style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}>
+                        <i className="fas fa-podcast"></i> Escuchar Podcast / Audios
                     </Link>
 
                     <div className="mobile-links-list">
                         <p className="mobile-section-title">Secciones</p>
                         
-                        {/* --- NUEVO BOTÓN RADIOS (MÓVIL) --- */}
                         <Link href="/radios" onClick={closeMenu} className={activeKey === 'radios' ? 'active' : ''} style={{color: '#0066cc', fontWeight: '700'}}>
                             <i className="fas fa-broadcast-tower" style={{marginRight: '8px'}}></i> Radios en Vivo
                         </Link>
+                        
+                        <Link href="/juegos" onClick={closeMenu} className={activeKey === 'juegos' ? 'active' : ''} style={{color: '#10b981', fontWeight: '700', marginTop: '10px'}}>
+                            <i className="fas fa-gamepad" style={{marginRight: '8px'}}></i> Zona Gamer
+                        </Link>
 
-                        <p className="mobile-section-title" style={{marginTop: '1rem'}}>Categorías</p>
+                        <p className="mobile-section-title" style={{marginTop: '1.5rem'}}>Categorías</p>
                         <Link href="/?categoria=todos" onClick={closeMenu} className={activeKey === 'todos' ? 'active' : ''}>General</Link>
                         <Link href="/?categoria=politica" onClick={closeMenu} className={activeKey === 'politica' ? 'active' : ''}>Política</Link>
                         <Link href="/?categoria=economia" onClick={closeMenu} className={activeKey === 'economia' ? 'active' : ''}>Economía</Link>

@@ -2,6 +2,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Layout from '../components/Layout';
 
+// Configuracion Edge para máxima velocidad en Cloudflare
+export const runtime = 'experimental-edge';
+
+// --- CACHÉ DE 30 MINUTOS EN EL SERVIDOR EDGE ---
+export async function getServerSideProps({ res }) {
+    res.setHeader(
+        'Cache-Control',
+        'public, s-maxage=1800, stale-while-revalidate=86400'
+    );
+    
+    return {
+        props: {} // La data es estática, solo necesitamos inyectar las cabeceras de caché
+    };
+}
+
 export default function Juegos() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -13,7 +28,7 @@ export default function Juegos() {
     });
     const viewerRef = useRef(null);
 
-    // LISTA COMPLETA DE 31 JUEGOS
+    // LISTA COMPLETA DE JUEGOS
     const games = [
         {
             title: "Bloxdhop.io",
@@ -186,14 +201,14 @@ export default function Juegos() {
     ];
 
     const categories = [
-        { id: 'all', name: 'Todos' },
-        { id: 'action', name: 'Acción' },
-        { id: 'io', name: '.IO (Multijugador)' },
-        { id: 'simulator', name: 'Simuladores' },
-        { id: 'puzzle', name: 'Puzzles' },
-        { id: 'racing', name: 'Carreras' },
-        { id: 'adventure', name: 'Aventura' },
-        { id: 'shooter', name: 'Shooter' }
+        { id: 'all', name: '🎮 Todos' },
+        { id: 'action', name: '⚔️ Acción' },
+        { id: 'io', name: '🌐 .IO' },
+        { id: 'simulator', name: '🚀 Simuladores' },
+        { id: 'puzzle', name: '🧩 Puzzles' },
+        { id: 'racing', name: '🏎️ Carreras' },
+        { id: 'adventure', name: '🗺️ Aventura' },
+        { id: 'shooter', name: '🔫 Shooter' }
     ];
 
     const filteredGames = games.filter(game => {
@@ -206,11 +221,8 @@ export default function Juegos() {
     const openGame = (url, title) => {
         setViewerState({ isOpen: true, url, title, isLoading: true });
         
-        // Simular tiempo de carga del iframe para mostrar animación
         setTimeout(() => {
             setViewerState(prev => ({ ...prev, isLoading: false }));
-            
-            // Auto pantalla completa en PC si es posible
             if (window.innerWidth > 768 && viewerRef.current && viewerRef.current.requestFullscreen) {
                 viewerRef.current.requestFullscreen().catch(() => {});
             }
@@ -224,7 +236,6 @@ export default function Juegos() {
         }
     };
 
-    // Cerrar con Escape
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape' && viewerState.isOpen) closeViewer();
@@ -236,47 +247,48 @@ export default function Juegos() {
     return (
         <Layout>
             <Head>
-                <title>Zona Gamer - Juegos Gratis en Noticias.lat</title>
-                <meta name="description" content="Disfruta de los mejores juegos online gratuitos directamente en Noticias.lat. Acción, carreras, puzzles y más." />
+                <title>Zona Gamer - Juegos Gratis | Noticias.lat</title>
+                <meta name="description" content="Disfruta de los mejores juegos online gratuitos en Noticias.lat. Acción, carreras, puzzles y multijugador sin descargas." />
+                <meta name="robots" content="index, follow" />
             </Head>
 
             <div className="container main-content" style={{ marginTop: '2rem', marginBottom: '5rem' }}>
                 
                 {/* CABECERA */}
-                <div style={{ textAlign: 'center', marginBottom: '3rem', background: 'linear-gradient(135deg, var(--color-tech-bg, #0f172a) 0%, #1e40af 100%)', padding: '3rem 1rem', borderRadius: '16px', color: 'white', boxShadow: 'var(--sombra-md)' }}>
-                    <h1 style={{ fontSize: '3rem', fontWeight: '900', margin: '0 0 1rem 0', letterSpacing: '-1px' }}>
-                        <i className="fas fa-gamepad" style={{ color: '#60a5fa', marginRight: '10px' }}></i>
+                <div style={{ textAlign: 'center', marginBottom: '3rem', background: 'linear-gradient(135deg, var(--color-tech-bg, #0f172a) 0%, #1e40af 100%)', padding: '4rem 1.5rem', borderRadius: '24px', color: 'white', boxShadow: 'var(--sombra-md)' }}>
+                    <h1 style={{ fontSize: '3.2rem', fontWeight: '900', margin: '0 0 1rem 0', letterSpacing: '-1px' }}>
+                        <i className="fas fa-gamepad" style={{ color: '#60a5fa', marginRight: '15px' }}></i>
                         Zona Gamer
                     </h1>
-                    <p style={{ fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', opacity: 0.9 }}>
-                        Tu pausa informativa. Disfruta de nuestra selección de juegos gratuitos sin necesidad de descargas.
+                    <p style={{ fontSize: '1.25rem', maxWidth: '650px', margin: '0 auto', opacity: 0.9, lineHeight: '1.6' }}>
+                        Tu pausa informativa. Disfruta de nuestra selección de minijuegos gratuitos de carga ultrarrápida.
                     </p>
                 </div>
 
                 {/* FILTROS Y BÚSQUEDA */}
-                <div className="filters-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '2rem' }}>
-                    <div className="search-box" style={{ position: 'relative', maxWidth: '500px', margin: '0 auto', width: '100%' }}>
-                        <i className="fas fa-search" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}></i>
+                <div className="filters-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '2.5rem' }}>
+                    <div className="search-box" style={{ position: 'relative', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+                        <i className="fas fa-search" style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}></i>
                         <input 
                             type="text" 
-                            placeholder="Buscar juego..." 
+                            placeholder="Buscar juego por nombre o descripción..." 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{ width: '100%', padding: '15px 20px 15px 45px', borderRadius: '50px', border: '1px solid var(--color-borde)', fontSize: '1rem', boxShadow: 'var(--sombra-sm)', outline: 'none' }}
+                            style={{ width: '100%', padding: '16px 20px 16px 50px', borderRadius: '50px', border: '1px solid var(--color-borde)', fontSize: '1.05rem', boxShadow: 'var(--sombra-sm)', outline: 'none', transition: 'border-color 0.2s' }}
                         />
                     </div>
 
-                    <div className="filters-scroll-container" style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div className="filters-scroll-container" style={{ display: 'flex', overflowX: 'auto', gap: '12px', paddingBottom: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         {categories.map(cat => (
                             <button 
                                 key={cat.id}
                                 className={`filter-chip ${activeCategory === cat.id ? 'active' : ''}`}
                                 onClick={() => setActiveCategory(cat.id)}
                                 style={{
-                                    padding: '8px 20px', borderRadius: '50px', border: '1px solid var(--color-borde)', 
+                                    padding: '10px 22px', borderRadius: '50px', border: '1px solid var(--color-borde)', 
                                     background: activeCategory === cat.id ? 'var(--color-primario)' : 'white',
                                     color: activeCategory === cat.id ? 'white' : 'var(--color-texto-cuerpo)',
-                                    fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap'
+                                    fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap'
                                 }}
                             >
                                 {cat.name}
@@ -285,78 +297,76 @@ export default function Juegos() {
                     </div>
                 </div>
 
-                {/* GRID DE JUEGOS (Estilo Bento adaptado) */}
+                {/* GRID DE JUEGOS */}
                 <div className="bento-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '25px' }}>
                     {filteredGames.length > 0 ? filteredGames.map((game, index) => (
-                        <div key={index} className="article-card" onClick={() => openGame(game.url, game.title)} style={{ cursor: 'pointer' }}>
-                            <div className="card-image-wrapper">
-                                <img src={game.thumbnail} alt={game.title} loading="lazy" />
+                        <div key={index} className="article-card" onClick={() => openGame(game.url, game.title)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                            <div className="card-image-wrapper" style={{ paddingTop: '56.25%' }}>
+                                <img src={game.thumbnail} alt={game.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 <div className="card-play-overlay">
-                                    <div className="card-play-icon">
+                                    <div className="card-play-icon" style={{ background: 'var(--color-primario)', color: 'white', border: 'none' }}>
                                         <i className="fas fa-play"></i>
                                     </div>
                                 </div>
                             </div>
-                            <div className="card-content">
-                                <div className="card-tags">
-                                    <span className="tag" style={{ background: '#e0f2fe', color: '#0284c7' }}>{game.category.toUpperCase()}</span>
+                            <div className="card-content" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="card-tags" style={{ marginBottom: '10px' }}>
+                                    <span className="tag" style={{ background: '#e0f2fe', color: '#0284c7', fontSize: '0.75rem' }}>{game.category.toUpperCase()}</span>
                                 </div>
-                                <h3 className="card-title" style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{game.title}</h3>
-                                <p className="card-excerpt" style={{ fontSize: '0.95rem', WebkitLineClamp: 2 }}>{game.description}</p>
+                                <h3 className="card-title" style={{ fontSize: '1.3rem', marginBottom: '8px', color: 'var(--color-texto-titulos)' }}>{game.title}</h3>
+                                <p className="card-excerpt" style={{ fontSize: '0.95rem', WebkitLineClamp: 2, color: 'var(--color-texto-suave)', flexGrow: 1 }}>{game.description}</p>
                             </div>
                         </div>
                     )) : (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 1rem', background: 'white', borderRadius: '12px', border: '1px dashed var(--color-borde)' }}>
-                            <i className="fas fa-ghost" style={{ fontSize: '3rem', color: '#cbd5e1', marginBottom: '1rem' }}></i>
-                            <h3 style={{ fontSize: '1.5rem', color: 'var(--color-texto-titulos)' }}>No encontramos ese juego</h3>
-                            <p style={{ color: 'var(--color-texto-suave)' }}>Prueba con otros términos o explora las categorías.</p>
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '5rem 1rem', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                            <i className="fas fa-ghost" style={{ fontSize: '4rem', color: '#94a3b8', marginBottom: '1.5rem' }}></i>
+                            <h3 style={{ fontSize: '1.6rem', color: '#1e293b', fontWeight: '800' }}>No encontramos ese juego</h3>
+                            <p style={{ color: '#64748b', fontSize: '1.1rem' }}>Prueba con otros términos o limpia tu búsqueda.</p>
                         </div>
                     )}
                 </div>
-
             </div>
 
             {/* VISOR DEL JUEGO (MODAL FULLSCREEN) */}
             {viewerState.isOpen && (
                 <div className="game-viewer-overlay" style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                    background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(10px)',
+                    background: 'rgba(15, 23, 42, 0.98)', backdropFilter: 'blur(15px)',
                     zIndex: 9999, display: 'flex', flexDirection: 'column',
-                    animation: 'fadeIn 0.3s ease-out'
+                    animation: 'fadeIn 0.2s ease-out'
                 }}>
                     
                     {/* Toolbar Superior */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 25px', background: '#0f172a', color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <img src="/favicon.png" alt="Logo" style={{ width: '30px', height: '30px', borderRadius: '6px' }} />
-                            <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: '700' }}>{viewerState.title}</h2>
+                            <img src="/favicon.png" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
+                            <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '800' }}>{viewerState.title}</h2>
                         </div>
                         <div style={{ display: 'flex', gap: '15px' }}>
-                            <button onClick={() => viewerRef.current?.requestFullscreen()} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-                                <i className="fas fa-expand"></i> Pantalla Completa
+                            <button onClick={() => viewerRef.current?.requestFullscreen()} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.background='rgba(255,255,255,0.25)'} onMouseOut={e => e.target.style.background='rgba(255,255,255,0.15)'}>
+                                <i className="fas fa-expand"></i> Ampliar
                             </button>
-                            <button onClick={closeViewer} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '8px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                <i className="fas fa-times"></i> Cerrar
+                            <button onClick={closeViewer} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '10px 22px', borderRadius: '8px', cursor: 'pointer', fontWeight: '800', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.background='#dc2626'} onMouseOut={e => e.target.style.background='#ef4444'}>
+                                <i className="fas fa-times"></i> Salir
                             </button>
                         </div>
                     </div>
 
                     {/* Contenedor del Iframe */}
-                    <div ref={viewerRef} style={{ flex: 1, position: 'relative', width: '100%', height: '100%', background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div ref={viewerRef} style={{ flex: 1, position: 'relative', width: '100%', height: '100%', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {viewerState.isLoading && (
                             <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', color: 'white' }}>
-                                <div className="loader-spinner" style={{ width: '60px', height: '60px', border: '5px solid rgba(255,255,255,0.2)', borderTopColor: 'var(--color-primario)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                                <h3 style={{ fontSize: '1.5rem', fontWeight: '800' }}>Cargando {viewerState.title}...</h3>
+                                <div className="loader-spinner" style={{ width: '60px', height: '60px', border: '4px solid rgba(255,255,255,0.1)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                <h3 style={{ fontSize: '1.4rem', fontWeight: '700' }}>Cargando {viewerState.title}...</h3>
                             </div>
                         )}
                         <iframe 
                             src={viewerState.url}
-                            style={{ width: '100%', height: '100%', border: 'none', opacity: viewerState.isLoading ? 0 : 1, transition: 'opacity 0.5s ease-in' }}
+                            style={{ width: '100%', height: '100%', border: 'none', opacity: viewerState.isLoading ? 0 : 1, transition: 'opacity 0.4s ease-in' }}
                             allowFullScreen
                             scrolling="no"
                         ></iframe>
                     </div>
-
                 </div>
             )}
 
@@ -368,12 +378,18 @@ export default function Juegos() {
                 @keyframes spin {
                     to { transform: rotate(360deg); }
                 }
+                .search-box input:focus {
+                    border-color: var(--color-primario) !important;
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+                }
+                .filter-chip {
+                    user-select: none;
+                }
                 .filter-chip:hover {
                     transform: translateY(-2px);
                     box-shadow: var(--sombra-md);
                 }
             `}</style>
-
         </Layout>
     );
 }

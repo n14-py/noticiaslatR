@@ -10,6 +10,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
+// Forzamos el entorno Edge para velocidad extrema en Cloudflare
 export const runtime = 'experimental-edge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.noticias.lat';
@@ -17,10 +18,10 @@ const SITE_NAME = 'Noticias.lat';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
 export async function getServerSideProps(context) {
-    // Caché extrema para Cloudflare: Sirve del borde inmediatamente, revalida en background.
+    // Caché extrema en el borde (CDN): Sirve al instante como HTML estático y actualiza en segundo plano
     context.res.setHeader(
         'Cache-Control',
-        'public, s-maxage=60, stale-while-revalidate=86400'
+        'public, s-maxage=1800, stale-while-revalidate=86400'
     );
 
     const { query } = context;
@@ -111,7 +112,6 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
 
     const titleText = getPageTitle();
 
-    // Separar las noticias para el slider (izq) y la grilla (der/abajo)
     const sliderArticles = initialArticles ? initialArticles.slice(0, 4) : [];
     const gridArticles = initialArticles ? initialArticles.slice(4) : [];
 
@@ -139,7 +139,7 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
 
                 <div style={{
                     opacity: loading ? 0.5 : 1,
-                    transition: 'opacity 0.3s ease',
+                    transition: 'opacity 0.2s ease',
                     pointerEvents: loading ? 'none' : 'auto'
                 }}>
                     {error || (initialArticles && initialArticles.length === 0) ? (

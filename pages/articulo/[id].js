@@ -81,9 +81,9 @@ export default function ArticlePage({ article, recommended }) {
     };
 
     // Distribución diversa de recomendaciones
-    const sidebarVisual = recommended.slice(0, 3); // 3 con imagen en el sidebar
-    const sidebarList = recommended.slice(3, 7);   // 4 en lista de texto en el sidebar
-    const bottomGrid = recommended.slice(7, 12);   // 5 para el bento grid inferior
+    const sidebarVisual = recommended.slice(0, 5); // 3 con imagen en el sidebar
+    const sidebarList = recommended.slice(5, 9);   // 4 en lista de texto en el sidebar
+    const bottomGrid = recommended.slice(10, 15);   // 5 para el bento grid inferior
 
     const paragraphs = article.articuloGenerado 
         ? article.articuloGenerado.split('\n').filter(p => p.trim() !== '') 

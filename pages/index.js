@@ -3,19 +3,12 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../components/Layout';
-import { Swiper, SwiperSlide } from 'swiper/react';
-// Renombramos el Pagination de Swiper para que no choque con tu función Pagination
-import { Autoplay, Pagination as SwiperPagination, EffectFade } from 'swiper/modules';
-
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/effect-fade';
 
 // Configuracion Edge para máxima velocidad en Cloudflare
 export const runtime = 'experimental-edge';
 
 // --- CONFIGURACION ---
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.noticias.lat';
+const API_URL = 'https://api.noticias.lat';
 const SITE_NAME = 'Noticias.lat';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
@@ -29,7 +22,7 @@ export async function getServerSideProps(context) {
 
     const { query } = context;
     const page = parseInt(query.page || '1', 10);
-    const limit = 13; 
+    const limit = 13;
     
     // CORRECCIÓN DE PAGINACIÓN: El backend espera "pagina", no "page"
     let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&pagina=${page}&limite=${limit}`;
@@ -45,7 +38,7 @@ export async function getServerSideProps(context) {
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error('Error fetching articles');
         const data = await res.json();
-        
+
         let articles = [];
         if (data.articulos && Array.isArray(data.articulos)) {
             articles = data.articulos;
@@ -117,9 +110,6 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
 
     const titleText = getPageTitle();
 
-    const sliderArticles = initialArticles ? initialArticles.slice(0, 4) : [];
-    const gridArticles = initialArticles ? initialArticles.slice(4) : [];
-
     return (
         <Layout>
             <Head>
@@ -150,40 +140,17 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                         <EmptyState />
                     ) : (
                         <>
-                            <div className="home-layout">
-                                {/* SLIDER IZQUIERDO (HERO) */}
-                                <div className="slider-section">
-                                    {sliderArticles.length > 0 && (
-                                        <Swiper
-                                            modules={[Autoplay, SwiperPagination, EffectFade]}
-                                            effect="fade"
-                                            spaceBetween={0}
-                                            slidesPerView={1}
-                                            pagination={{ clickable: true }}
-                                            autoplay={{ delay: 5000, disableOnInteraction: false }}
-                                            className="hero-swiper"
-                                        >
-                                            {sliderArticles.map((article) => (
-                                                <SwiperSlide key={article._id}>
-                                                    <HeroSlide article={article} />
-                                                </SwiperSlide>
-                                            ))}
-                                        </Swiper>
-                                    )}
-                                </div>
-
-                                {/* GRILLA DERECHA / INFERIOR (RELACIONADAS) */}
-                                <div className="grid-section">
-                                    <div className="bento-grid">
-                                        {gridArticles.map((article) => (
-                                            <ArticleCard 
-                                                key={article._id} 
-                                                article={article} 
-                                                isHero={false} 
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
+                            <div className="bento-grid">
+                                {initialArticles.map((article, index) => {
+                                    const isHero = (index === 0 && pagination.currentPage === 1);
+                                    return (
+                                        <ArticleCard 
+                                            key={article._id} 
+                                            article={article} 
+                                            isHero={isHero} 
+                                        />
+                                    );
+                                })}
                             </div>
 
                             {initialArticles && initialArticles.length > 0 && (
@@ -197,116 +164,11 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                     )}
                 </div>
             </div>
-
-            <style jsx>{`
-                .home-layout {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: 2rem;
-                }
-                @media (min-width: 1024px) {
-                    .home-layout {
-                        grid-template-columns: 1.2fr 1fr;
-                    }
-                }
-                .hero-swiper {
-                    border-radius: var(--radio-card);
-                    overflow: hidden;
-                    box-shadow: var(--sombra-lg);
-                    height: 100%;
-                    min-height: 450px;
-                }
-                .hero-swiper :global(.swiper-pagination-bullet-active) {
-                    background: var(--color-primario);
-                }
-            `}</style>
         </Layout>
     );
 }
 
 // --- 3. SUB-COMPONENTES ---
-
-function HeroSlide({ article }) {
-    const imgUrl = (article.imagen && article.imagen.startsWith('http')) ? article.imagen : PLACEHOLDER_IMG;
-    const hasVideo = (article.youtubeId && article.videoProcessingStatus === 'complete');
-
-    return (
-        <div className="hero-slide-content">
-            <Link href={`/articulo/${article._id}`} className="hero-img-link">
-                <img src={imgUrl} alt={article.titulo} />
-                <div className="hero-gradient"></div>
-                {hasVideo && (
-                    <div className="card-play-overlay" style={{ opacity: 1, background: 'transparent' }}>
-                        <div className="card-play-icon" style={{ transform: 'scale(1.2)' }}>
-                            <i className="fas fa-play"></i>
-                        </div>
-                    </div>
-                )}
-            </Link>
-            <div className="hero-text-overlay">
-                <div className="card-tags">
-                    <span className="tag">{article.categoria}</span>
-                    {hasVideo && <span className="tag" style={{background: '#ef4444', color: '#fff'}}>VIDEO</span>}
-                </div>
-                <h2>
-                    <Link href={`/articulo/${article._id}`}>
-                        {article.titulo}
-                    </Link>
-                </h2>
-            </div>
-
-            <style jsx>{`
-                .hero-slide-content {
-                    position: relative;
-                    width: 100%;
-                    height: 100%;
-                    min-height: 450px;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: flex-end;
-                }
-                .hero-img-link {
-                    position: absolute;
-                    inset: 0;
-                    width: 100%;
-                    height: 100%;
-                }
-                .hero-img-link img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                }
-                .hero-gradient {
-                    position: absolute;
-                    inset: 0;
-                    background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 50%, transparent 100%);
-                }
-                .hero-text-overlay {
-                    position: relative;
-                    z-index: 10;
-                    padding: 2.5rem;
-                }
-                .hero-text-overlay h2 {
-                    font-size: 1.8rem;
-                    font-weight: 900;
-                    line-height: 1.2;
-                    margin: 0.5rem 0 0 0;
-                }
-                .hero-text-overlay h2 a {
-                    color: #ffffff;
-                    text-decoration: none;
-                    transition: color 0.2s;
-                }
-                .hero-text-overlay h2 a:hover {
-                    color: var(--color-primario-light);
-                }
-                @media (min-width: 768px) {
-                    .hero-text-overlay h2 { font-size: 2.4rem; }
-                }
-            `}</style>
-        </div>
-    );
-}
 
 function ArticleCard({ article, isHero }) {
     const fecha = new Date(article.fecha).toLocaleDateString('es-ES', { 

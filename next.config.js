@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
-  // --- IMÁGENES ---
-  // Vital para que carguen las fotos de las noticias y logos de radios
+  
   images: {
     domains: [
       'pbs.twimg.com', 
@@ -13,7 +11,6 @@ const nextConfig = {
       'cdn-profiles.tunein.com',
       'logo.clearbit.com'
     ],
-    // Esto permite cargar imágenes de CUALQUIER dominio (necesario para un agregador de noticias)
     remotePatterns: [
       {
         protocol: 'https',
@@ -25,27 +22,48 @@ const nextConfig = {
       },
     ],
   },
-  
+
+  // --- HEADERS (CACHÉ FORZADO 24HS PARA SITEMAPS) ---
+  // Convierte los sitemaps dinámicos de la API en archivos "estáticos" en caché por 24 horas.
+  async headers() {
+    return [
+      {
+        // Aplica a sitemap.xml, sitemap-static.xml, sitemap-noticias-1.xml, etc.
+        source: '/sitemap(.*).xml',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400'
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/xml'
+          }
+        ],
+      },
+    ];
+  },
+
   // --- REWRITES (LA MAGIA DE LOS SITEMAPS) ---
-  // Esto conecta tu dominio frontend con los sitemaps de la API
   async rewrites() {
     return [
-      // 1. Índice Principal
       {
         source: '/sitemap.xml',
         destination: 'https://api.noticias.lat/api/sitemap.xml',
       },
-      // 2. Sitemap Estático
       {
         source: '/sitemap-static.xml',
         destination: 'https://api.noticias.lat/api/sitemap-static.xml',
       },
-      // 3. Sitemaps Dinámicos de Noticias (Paginados: 1, 2, 3...)
       {
         source: '/sitemap-noticias-:page.xml',
         destination: 'https://api.noticias.lat/api/sitemap-noticias-:page.xml',
       },
-      // 4. Robots.txt real
+      // Añadido para habilitar el sitemap de video que figura en el backend
+      {
+        source: '/sitemap-video.xml',
+        destination: 'https://api.noticias.lat/api/sitemap-video.xml',
+      },
       {
         source: '/robots.txt',
         destination: '/robots_real.txt',
@@ -54,17 +72,14 @@ const nextConfig = {
   },
 
   // --- REDIRECCIONES (SEO LEGADO) ---
-  // Mantienen el posicionamiento de tu web antigua redirigiendo .html a rutas limpias
   async redirects() {
     return [
-      // Artículos (de articulo.html?id=123 a /articulo/123)
       {
         source: '/articulo.html',
         has: [ { type: 'query', key: 'id' } ],
         destination: '/articulo/:id',
-        permanent: true, // 301 Permanent Redirect
+        permanent: true,
       },
-      // Páginas estáticas
       {
         source: '/sobre-nosotros.html',
         destination: '/sobre-nosotros',

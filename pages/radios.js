@@ -7,7 +7,8 @@ import { usePlayer } from '../context/PlayerContext';
 
 export const runtime = 'experimental-edge';
 
-const API_URL = 'https://api.noticias.lat/api';
+// Corrección de URL base para igualar al index.js
+const API_URL = 'https://api.noticias.lat';
 const PLACEHOLDER_LOGO = '/images/placeholder.jpg'; 
 const LIMITE_POR_PAGINA = 30; 
 
@@ -46,7 +47,7 @@ const GENRE_FILTERS = [
 ];
 
 export async function getServerSideProps(context) {
-    context.res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=60');
+    context.res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
 
     const { query, pais, genero, pagina: pagina_raw, tab: tab_raw } = context.query;
     
@@ -59,42 +60,68 @@ export async function getServerSideProps(context) {
     };
 
     let url = '';
-    let tituloPagina = queryParams.tab === 'podcasts' ? "Podcast de Noticias y Audio Artículos" : "Radios en Vivo";
+    let tituloPagina = queryParams.tab === 'podcasts' ? "Podcast y Audionoticias" : "Radios en Vivo";
     
-    if (queryParams.tab === 'podcasts') {
-        url = `${API_URL}/articles?limite=${LIMITE_POR_PAGINA}&pagina=${queryParams.pagina}&audio=true&hasAudio=true`;
-        if (queryParams.pais) {
-            url += `&pais=${encodeURIComponent(queryParams.pais)}&country=${encodeURIComponent(queryParams.pais)}`;
-            tituloPagina = `Podcasts y Noticias en Audio de ${queryParams.pais}`;
-        }
-    } else {
-        url = `${API_URL}/radio/buscar?limite=${LIMITE_POR_PAGINA}&pagina=${queryParams.pagina}`;
-        if (queryParams.query) {
-            url += `&query=${encodeURIComponent(queryParams.query)}`;
-            tituloPagina = `Resultados: "${queryParams.query}"`;
-        } else if (queryParams.pais) {
-            const paisObj = COUNTRY_FILTERS.find(p => p.pais === queryParams.pais);
-            const emoji = paisObj ? paisObj.label.split(' ')[0] : '📻';
-            url += `&pais=${encodeURIComponent(queryParams.pais)}`;
-            tituloPagina = `${emoji} Radios de ${queryParams.pais}`;
-        } else if (queryParams.genero) {
-            url += `&genero=${encodeURIComponent(queryParams.genero)}`;
-            tituloPagina = `Género: ${queryParams.genero}`;
-        }
-    }
-
     try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Error API`);
-        const data = await res.json();
-        
-        return { props: { data, queryParams, tituloPagina } };
+        let items = [];
+        let totalPaginas = 1;
+        let paginaActual = queryParams.pagina;
+
+        if (queryParams.tab === 'podcasts') {
+            // BACKEND FIX: Usamos la misma lógica robusta del index.js para asegurar que traiga las noticias con audio
+            url = `${API_URL}/api/articles?sitio=noticias.lat&limite=${LIMITE_POR_PAGINA}&pagina=${queryParams.pagina}&hasAudio=true`;
+            if (queryParams.pais) {
+                url += `&pais=${encodeURIComponent(queryParams.pais)}`;
+                tituloPagina = `Audionoticias de ${queryParams.pais}`;
+            }
+            
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Error fetching podcasts');
+            const data = await res.json();
+            
+            // Extracción a prueba de fallos (Mismo sistema que index.js)
+            items = data.articulos || data.articles || data.docs || (Array.isArray(data) ? data : []);
+            totalPaginas = data.totalPaginas || data.totalPages || 1;
+            paginaActual = data.paginaActual || data.page || queryParams.pagina;
+
+        } else {
+            url = `${API_URL}/api/radio/buscar?limite=${LIMITE_POR_PAGINA}&pagina=${queryParams.pagina}`;
+            if (queryParams.query) {
+                url += `&query=${encodeURIComponent(queryParams.query)}`;
+                tituloPagina = `Resultados: "${queryParams.query}"`;
+            } else if (queryParams.pais) {
+                const paisObj = COUNTRY_FILTERS.find(p => p.pais === queryParams.pais);
+                const emoji = paisObj ? paisObj.label.split(' ')[0] : '📻';
+                url += `&pais=${encodeURIComponent(queryParams.pais)}`;
+                tituloPagina = `${emoji} Radios de ${queryParams.pais}`;
+            } else if (queryParams.genero) {
+                url += `&genero=${encodeURIComponent(queryParams.genero)}`;
+                tituloPagina = `Género: ${queryParams.genero}`;
+            }
+
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Error fetching radios');
+            const data = await res.json();
+            
+            items = data.radios || [];
+            totalPaginas = data.totalPaginas || data.totalPages || 1;
+            paginaActual = data.paginaActual || data.currentPage || queryParams.pagina;
+        }
+
+        return { 
+            props: { 
+                items, 
+                pagination: { totalPaginas, paginaActual },
+                queryParams, 
+                tituloPagina 
+            } 
+        };
     } catch (error) {
+        console.error("Error en radios.js:", error);
         return {
             props: {
-                data: queryParams.tab === 'podcasts' 
-                    ? { articles: [], totalPaginas: 1, paginaActual: 1 } 
-                    : { radios: [], totalRadios: 0, totalPaginas: 1, paginaActual: 1 },
+                items: [],
+                pagination: { totalPaginas: 1, paginaActual: 1 },
                 queryParams,
                 tituloPagina,
                 error: "No pudimos conectar con los servidores. Intenta luego.",
@@ -103,7 +130,7 @@ export async function getServerSideProps(context) {
     }
 }
 
-export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
+export default function RadiosPage({ items, pagination, queryParams, tituloPagina, error }) {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState(queryParams.query || '');
     const scrollRefPais = useRef(null);
@@ -144,22 +171,14 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
     };
 
     const isPodcasts = queryParams.tab === 'podcasts';
-    
-    const items = isPodcasts 
-        ? (data.articles || data.noticias || data.data || []) 
-        : (data.radios || []);
-        
-    const totalPaginas = data.totalPaginas || data.totalPages || 1;
-    const paginaActual = data.paginaActual || data.currentPage || 1;
 
-    // Estructura de marcado de datos estructurados (SEO)
+    // Marcado de datos estructurados
     const seoSchema = isPodcasts ? {
         "@context": "https://schema.org",
         "@type": "PodcastSeries",
         "name": "Noticias.lat Podcasts",
-        "description": "Escucha las últimas noticias en audio continuo y reportajes automatizados de Latinoamérica.",
-        "url": "https://noticias.lat/radios?tab=podcasts",
-        "webFeed": "https://noticias.lat/api/articles?audio=true"
+        "description": "Escucha las últimas noticias en audio y reportajes automatizados de Latinoamérica.",
+        "url": "https://noticias.lat/radios?tab=podcasts"
     } : {
         "@context": "https://schema.org",
         "@type": "RadioStation",
@@ -172,72 +191,70 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
         <Layout>
             <Head>
                 <title>{`${tituloPagina} | Noticias.lat`}</title>
-                <meta name="description" content={`Escucha gratis ${tituloPagina} en Noticias.lat. El mayor catálogo de audio de Latinoamérica, reproducción continua y optimización de datos.`} />
+                <meta name="description" content={`Escucha gratis ${tituloPagina} en Noticias.lat. Reproducción continua y optimización de datos.`} />
                 <meta name="robots" content="index, follow" />
                 <link rel="canonical" href={`https://noticias.lat/radios?tab=${queryParams.tab}`} />
                 <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(seoSchema) }} />
             </Head>
 
-            <div className="container main-content">
+            <div className="container main-content" style={{ maxWidth: '1400px' }}>
                 
-                {/* SELECTOR DE TABS REDISEÑADO */}
                 <div className="radio-page-header" style={{ paddingTop: '20px' }}>
-                    <div className="tabs-container" style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '25px', background: '#f1f5f9', padding: '6px', borderRadius: '40px', maxWidth: '450px', margin: '0 auto 30px auto' }}>
+                    <div className="tabs-container" style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '25px', background: '#f8fafc', padding: '8px', borderRadius: '40px', maxWidth: '500px', margin: '0 auto 30px auto', border: '1px solid #e2e8f0' }}>
                         <button 
                             className={`tab-btn ${!isPodcasts ? 'active' : ''}`}
                             onClick={() => handleTabChange('radios')}
-                            style={{ flex: 1, padding: '12px 24px', borderRadius: '35px', border: 'none', background: !isPodcasts ? '#2563eb' : 'transparent', color: !isPodcasts ? '#fff' : '#64748b', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: !isPodcasts ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none' }}
+                            style={{ flex: 1, padding: '12px 24px', borderRadius: '35px', border: 'none', background: !isPodcasts ? 'var(--color-primario)' : 'transparent', color: !isPodcasts ? '#fff' : '#64748b', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: !isPodcasts ? '0 4px 12px rgba(0,0,0,0.1)' : 'none' }}
                         >
                             📻 Radios en Vivo
                         </button>
                         <button 
                             className={`tab-btn ${isPodcasts ? 'active' : ''}`}
                             onClick={() => handleTabChange('podcasts')}
-                            style={{ flex: 1, padding: '12px 24px', borderRadius: '35px', border: 'none', background: isPodcasts ? '#2563eb' : 'transparent', color: isPodcasts ? '#fff' : '#64748b', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: isPodcasts ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none' }}
+                            style={{ flex: 1, padding: '12px 24px', borderRadius: '35px', border: 'none', background: isPodcasts ? 'var(--color-primario)' : 'transparent', color: isPodcasts ? '#fff' : '#64748b', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: isPodcasts ? '0 4px 12px rgba(0,0,0,0.1)' : 'none' }}
                         >
-                            🎙️ Podcast / Audios
+                            🎙️ Audionoticias
                         </button>
                     </div>
 
-                    <h1 className="article-title-main" style={{ fontSize: '2.4rem', marginBottom: '0.75rem', textAlign: 'center', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                    <h1 className="article-title-main" style={{ fontSize: '2.5rem', marginBottom: '1rem', textAlign: 'center', fontWeight: '900', color: 'var(--color-texto-titulos)' }}>
                         {tituloPagina}
                     </h1>
-                    <p style={{marginBottom: '2.5rem', color: '#64748b', fontSize: '1.15rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto 2.5rem auto', lineHeight: '1.5'}}>
-                        {isPodcasts ? 'Crea tu propia playlist de noticias continuas y escucha los acontecimientos de tu región en audio.' : 'Explora miles de estaciones de radio en vivo. Música, deportes e información al instante.'}
+                    <p style={{marginBottom: '2.5rem', color: '#64748b', fontSize: '1.1rem', textAlign: 'center', maxWidth: '700px', margin: '0 auto 2.5rem auto', lineHeight: '1.6'}}>
+                        {isPodcasts ? 'Escucha los reportajes completos, análisis y noticias de último minuto narrados de forma inteligente.' : 'Explora miles de estaciones de radio en vivo. Música, deportes e información al instante desde cualquier lugar.'}
                     </p>
                     
                     {!isPodcasts && (
-                        <form className="radio-search-container" onSubmit={handleSearchSubmit} style={{ maxWidth: '600px', margin: '0 auto 2.5rem auto' }}>
+                        <form className="radio-search-container" onSubmit={handleSearchSubmit} style={{ maxWidth: '600px', margin: '0 auto 2.5rem auto', display: 'flex', gap: '10px' }}>
                             <input 
                                 type="text" 
                                 className="radio-search-input"
-                                placeholder="Buscar emisora por nombre (Ej: Disney, Mitre, Los 40...)" 
+                                placeholder="Buscar emisora por nombre..." 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{ flex: 1, padding: '15px 20px', borderRadius: '50px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }}
                             />
-                            <button type="submit" className="radio-search-btn">
+                            <button type="submit" className="radio-search-btn" style={{ background: 'var(--color-primario)', color: 'white', border: 'none', borderRadius: '50px', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.2rem' }}>
                                 <i className="fas fa-search"></i>
                             </button>
                         </form>
                     )}
                 </div>
 
-                {/* FILTROS DE PAÍSES (CON SOPORTE TOTAL DE DESPLAZAMIENTO FLUIDO Y TÁCTIL) */}
                 <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
-                    <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: '#64748b', marginBottom: '12px', fontWeight: '800', letterSpacing: '1.2px' }}>
-                        Filtrar por País
+                    <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--color-texto-titulos)', marginBottom: '15px', fontWeight: '900', borderLeft: '4px solid var(--color-primario)', paddingLeft: '10px' }}>
+                        Selecciona tu Región
                     </h3>
                     <div 
                         className="filters-scroll-container" 
                         ref={scrollRefPais}
-                        style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '12px', paddingLeft: '2px', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '15px', paddingLeft: '2px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
                         {COUNTRY_FILTERS.map((filter, index) => (
                             <div 
                                 key={index} 
-                                className={`filter-chip ${isActive('pais', filter.pais || filter.code) ? 'active' : ''}`}
                                 onClick={() => handleFilterClick('pais', filter.pais || filter.code)}
-                                style={{ flex: '0 0 auto', scrollSnapAlign: 'start', cursor: 'pointer', padding: '10px 18px', borderRadius: '20px', background: isActive('pais', filter.pais || filter.code) ? '#2563eb' : '#fff', color: isActive('pais', filter.pais || filter.code) ? '#fff' : '#334155', fontWeight: '600', fontSize: '0.9rem', border: '1px solid #e2e8f0', transition: 'all 0.2s ease', userSelect: 'none' }}
+                                style={{ flex: '0 0 auto', cursor: 'pointer', padding: '10px 20px', borderRadius: '50px', background: isActive('pais', filter.pais || filter.code) ? 'var(--color-primario)' : '#f8fafc', color: isActive('pais', filter.pais || filter.code) ? '#fff' : '#334155', fontWeight: 'bold', fontSize: '0.9rem', border: '1px solid', borderColor: isActive('pais', filter.pais || filter.code) ? 'var(--color-primario)' : '#e2e8f0', transition: 'all 0.2s ease', userSelect: 'none' }}
                             >
                                 {filter.label}
                             </div>
@@ -245,23 +262,21 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
                     </div>
                 </div>
 
-                {/* FILTROS DE GÉNEROS / CATEGORÍAS */}
                 {!isPodcasts && (
                     <div style={{ marginBottom: '3rem' }}>
-                        <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: '#64748b', marginBottom: '12px', fontWeight: '800', letterSpacing: '1.2px' }}>
-                            Categorías Populares
+                        <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--color-texto-titulos)', marginBottom: '15px', fontWeight: '900', borderLeft: '4px solid #ff0000', paddingLeft: '10px' }}>
+                            Categorías Destacadas
                         </h3>
                         <div 
                             className="filters-scroll-container" 
                             ref={scrollRefGenero}
-                            style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '12px', paddingLeft: '2px', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                            style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '15px', paddingLeft: '2px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                             {GENRE_FILTERS.map((filter, index) => (
                                 <div 
                                     key={index} 
-                                    className={`filter-chip ${isActive('genero', filter.genero) ? 'active' : ''}`}
                                     onClick={() => handleFilterClick('genero', filter.genero)}
-                                    style={{ flex: '0 0 auto', scrollSnapAlign: 'start', cursor: 'pointer', padding: '10px 18px', borderRadius: '20px', background: isActive('genero', filter.genero) ? '#2563eb' : '#fff', color: isActive('genero', filter.genero) ? '#fff' : '#334155', fontWeight: '600', fontSize: '0.9rem', border: '1px solid #e2e8f0', transition: 'all 0.2s ease', userSelect: 'none' }}
+                                    style={{ flex: '0 0 auto', cursor: 'pointer', padding: '10px 20px', borderRadius: '50px', background: isActive('genero', filter.genero) ? '#ff0000' : '#f8fafc', color: isActive('genero', filter.genero) ? '#fff' : '#334155', fontWeight: 'bold', fontSize: '0.9rem', border: '1px solid', borderColor: isActive('genero', filter.genero) ? '#ff0000' : '#e2e8f0', transition: 'all 0.2s ease', userSelect: 'none' }}
                             >
                                     {filter.label}
                                 </div>
@@ -270,51 +285,55 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
                     </div>
                 )}
 
-                {/* CUADRÍCULA DE CONTENIDO REESTRUCTURADA */}
                 {error ? (
-                    <div className="no-articles-message" style={{ textAlign: 'center', padding: '3rem 0', color: '#ef4444', fontWeight: '600' }}>{error}</div>
+                    <div className="no-articles-message" style={{ textAlign: 'center', padding: '3rem 0', color: '#ef4444', fontWeight: 'bold', fontSize: '1.2rem' }}>{error}</div>
                 ) : items.length === 0 ? (
-                    <div className="no-articles-message" style={{ textAlign: 'center', padding: '4rem 1rem', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-                        <i className={isPodcasts ? "fas fa-podcast" : "fas fa-broadcast-tower"} style={{ fontSize: '3.5rem', color: '#94a3b8', marginBottom: '1.25rem' }}></i>
-                        <h3 style={{ fontSize: '1.4rem', color: '#1e293b', marginBottom: '0.5rem', fontWeight: '700' }}>
-                            {isPodcasts ? 'No se encontraron audio noticias' : 'No encontramos emisoras'}
+                    <div className="no-articles-message" style={{ textAlign: 'center', padding: '5rem 1rem', background: '#f8fafc', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
+                        <i className={isPodcasts ? "fas fa-microphone-alt-slash" : "fas fa-broadcast-tower"} style={{ fontSize: '4rem', color: '#94a3b8', marginBottom: '1.5rem' }}></i>
+                        <h3 style={{ fontSize: '1.8rem', color: 'var(--color-texto-titulos)', marginBottom: '1rem', fontWeight: '800' }}>
+                            {isPodcasts ? 'No hay audionoticias en esta región' : 'No encontramos emisoras'}
                         </h3>
-                        <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>Intenta seleccionar otro país de la lista o limpia los filtros aplicados.</p>
-                        <button onClick={() => router.push(`/radios?tab=${queryParams.tab}`)} className="pagination-btn" style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer' }}>
-                            Restablecer todos los filtros
+                        <p style={{ color: '#64748b', fontSize: '1.1rem', marginBottom: '2rem' }}>Intenta seleccionar otro país de la lista o limpia los filtros aplicados.</p>
+                        <button onClick={() => router.push(`/radios?tab=${queryParams.tab}`)} style={{ background: 'var(--color-primario)', color: '#fff', padding: '12px 25px', borderRadius: '50px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem' }}>
+                            Ver catálogo completo
                         </button>
                     </div>
                 ) : (
-                    <div className="stations-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '20px' }}>
+                    <div className="stations-grid" style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: isPodcasts ? 'repeat(auto-fill, minmax(320px, 1fr))' : 'repeat(auto-fill, minmax(170px, 1fr))', 
+                        gap: isPodcasts ? '25px' : '20px' 
+                    }}>
                         {items.map((item) => (
                             isPodcasts 
-                            ? <PodcastCard key={item._id || item.uuid || item.slug} article={item} queryParams={queryParams} />
+                            ? <NativePodcastCard key={item._id || item.slug} article={item} />
                             : <StationCard key={item.uuid} station={item} />
                         ))}
                     </div>
                 )}
 
                 <Pagination 
-                    paginaActual={paginaActual} 
-                    totalPaginas={totalPaginas} 
+                    paginaActual={pagination.paginaActual} 
+                    totalPaginas={pagination.totalPaginas} 
                     queryParams={queryParams}
                 />
             </div>
             
-            {/* INYECCIÓN DE ESTILOS CSS REQUERIDOS PARA EL DESPLAZAMIENTO FLUIDO Y EFECTOS SKEW */}
             <style jsx global>{`
                 .filters-scroll-container::-webkit-scrollbar {
                     display: none !important;
                 }
+                
+                /* Estilos Radio Stations */
                 .station-card {
                     background: #ffffff;
                     border: 1px solid #e2e8f0;
-                    border-radius: 16px;
-                    padding: 16px;
+                    border-radius: 12px;
+                    padding: 20px 15px;
                     text-align: center;
                     cursor: pointer;
                     position: relative;
-                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: transform 0.2s, box-shadow 0.2s;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -324,24 +343,25 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
                 }
                 .station-card:hover {
                     transform: translateY(-5px);
-                    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-                    border-color: #cbd5e1;
+                    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+                    border-color: var(--color-primario);
                 }
                 .station-card.playing {
-                    border-color: #2563eb;
+                    border-color: var(--color-primario);
                     background: #f0f5ff;
+                    box-shadow: 0 0 0 2px var(--color-primario);
                 }
                 .station-logo-wrapper {
-                    width: 90px;
-                    height: 90px;
+                    width: 100px;
+                    height: 100px;
                     border-radius: 50%;
                     overflow: hidden;
                     background: #f8fafc;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin-bottom: 12px;
-                    border: 1px solid #f1f5f9;
+                    margin-bottom: 15px;
+                    border: 1px solid #e2e8f0;
                 }
                 .station-logo-wrapper img {
                     width: 100%;
@@ -349,10 +369,10 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
                     object-fit: cover;
                 }
                 .station-title {
-                    font-size: 0.95rem;
-                    font-weight: 700;
-                    color: #0f172a;
-                    margin-bottom: 4px;
+                    font-size: 1rem;
+                    font-weight: 800;
+                    color: var(--color-texto-titulos);
+                    margin-bottom: 5px;
                     display: -webkit-box;
                     -webkit-line-clamp: 2;
                     -webkit-box-orient: vertical;
@@ -360,75 +380,73 @@ export default function RadiosPage({ data, queryParams, tituloPagina, error }) {
                     line-height: 1.3;
                 }
                 .station-location {
-                    font-size: 0.75rem;
-                    color: #64748b;
-                    font-weight: 600;
-                }
-                .station-info-btn {
-                    position: absolute;
-                    top: 12px;
-                    right: 12px;
-                    width: 28px;
-                    height: 28px;
-                    background: #f1f5f9;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #64748b;
                     font-size: 0.8rem;
-                    transition: all 0.2s ease;
-                    z-index: 2;
-                }
-                .station-info-btn:hover {
-                    background: #e2e8f0;
-                    color: #0f172a;
+                    color: #64748b;
+                    font-weight: bold;
+                    text-transform: uppercase;
                 }
                 .playing-indicator {
                     position: absolute;
-                    top: 12px;
-                    left: 12px;
+                    top: 15px;
+                    left: 15px;
                     display: flex;
-                    gap: 3px;
+                    gap: 4px;
                     align-items: flex-end;
-                    height: 16px;
+                    height: 18px;
                     z-index: 2;
                 }
                 .bar-anim {
-                    width: 3px;
+                    width: 4px;
                     height: 100%;
-                    background: #2563eb;
+                    background: var(--color-primario);
                     animation: bounce 0.6s ease infinite alternate;
+                    border-radius: 2px;
                 }
                 .bar-anim:nth-child(2) { animation-delay: 0.2s; }
                 .bar-anim:nth-child(3) { animation-delay: 0.4s; }
                 @keyframes bounce {
                     0% { height: 4px; }
-                    100% { height: 16px; }
+                    100% { height: 18px; }
+                }
+
+                /* Estilos Nativos para Podcast (Audionoticias) */
+                .podcast-native-card {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                .podcast-native-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                }
+                .podcast-native-card audio::-webkit-media-controls-panel {
+                    background-color: #f8fafc;
+                }
+                .podcast-native-card audio::-webkit-media-controls-play-button {
+                    background-color: var(--color-primario);
+                    border-radius: 50%;
                 }
             `}</style>
         </Layout>
     );
 }
 
+// COMPONENTE: Estación de Radio Clásica (Mantiene uso del Contexto Global)
 function StationCard({ station }) {
     const { playStation, pauseStation, currentStation, isPlaying } = usePlayer();
+    const router = useRouter();
     
     const isThisStation = currentStation?.uuid === station.uuid;
     const isThisPlaying = isThisStation && isPlaying;
 
-    const handleCardClick = () => {
-        if (isThisPlaying) {
-            pauseStation();
-        } else {
-            playStation(station);
-        }
-    };
-
     return (
         <div 
             className={`station-card ${isThisPlaying ? 'playing' : ''}`}
-            onClick={handleCardClick}
+            onClick={() => isThisPlaying ? pauseStation() : playStation(station)}
             title={`Escuchar ${station.nombre}`}
         >
             {isThisPlaying && (
@@ -439,14 +457,15 @@ function StationCard({ station }) {
                 </div>
             )}
 
-            <Link 
-                href={`/radio/${station.uuid}`} 
-                className="station-info-btn"
-                onClick={(e) => e.stopPropagation()}
+            <button 
+                onClick={(e) => { e.stopPropagation(); router.push(`/radio/${station.uuid}`); }}
+                style={{ position: 'absolute', top: '15px', right: '15px', background: '#f1f5f9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', color: '#64748b', cursor: 'pointer', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
                 title="Ver detalles"
             >
                 <i className="fas fa-info"></i>
-            </Link>
+            </button>
 
             <div className="station-logo-wrapper">
                 <img 
@@ -457,93 +476,71 @@ function StationCard({ station }) {
                 />
             </div>
             
-            <div className="station-title">
-                {station.nombre.trim()}
-            </div>
-            
-            <span className="station-location">
-                {station.pais || 'Latinoamérica'}
-            </span>
+            <div className="station-title">{station.nombre.trim()}</div>
+            <span className="station-location">{station.pais || 'Latinoamérica'}</span>
         </div>
     );
 }
 
-function PodcastCard({ article, queryParams }) {
-    const { playStation, pauseStation, currentStation, isPlaying } = usePlayer();
-    const router = useRouter();
-    
-    const podcastId = article._id || article.uuid || article.slug;
-    const isThisPodcast = currentStation?.uuid === podcastId;
-    const isThisPlaying = isThisPodcast && isPlaying;
-
-    // Mapeo seguro de campos de audio e imagen procedentes del backend de artículos
-    const finalAudioUrl = article.audioUrl || article.audio || '';
-    const finalImageUrl = article.imageUrl || article.imagen || PLACEHOLDER_LOGO;
-    const finalTitle = article.title || article.titulo || 'Noticia en Audio';
-
-    const handleCardClick = () => {
-        if (isThisPlaying) {
-            pauseStation();
-        } else {
-            const podcastData = {
-                uuid: podcastId,
-                nombre: finalTitle,
-                pais: article.country || article.pais || queryParams.pais || 'Internacional',
-                logo: finalImageUrl,
-                stream_url: finalAudioUrl, 
-                isPodcast: true
-            };
-            playStation(podcastData);
-        }
-    };
+// NUEVO COMPONENTE: Podcast Nativo (IGNORA EL PLAYER GLOBAL - 100% FUNCIONALIDAD DIRECTA)
+function NativePodcastCard({ article }) {
+    const audioUrl = article.audioUrl || article.audio;
+    const imageUrl = article.imagen || article.imageUrl || PLACEHOLDER_LOGO;
+    const title = article.titulo || article.title || 'Noticia sin título';
+    const desc = article.descripcion || 'Escucha el reporte completo en formato audio.';
+    const category = article.categoria || 'Noticias';
+    const date = article.fecha ? new Date(article.fecha).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }) : '';
 
     return (
-        <div 
-            className={`station-card ${isThisPlaying ? 'playing' : ''}`}
-            onClick={handleCardClick}
-            title={`Escuchar: ${finalTitle}`}
-        >
-            {isThisPlaying && (
-                <div className="playing-indicator">
-                    <div className="bar-anim"></div>
-                    <div className="bar-anim"></div>
-                    <div className="bar-anim"></div>
+        <div className="podcast-native-card">
+            <Link href={`/articulo/${article._id}`} style={{ display: 'flex', gap: '15px', padding: '15px', textDecoration: 'none', color: 'inherit', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ width: '90px', height: '90px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', position: 'relative' }}>
+                    <img 
+                        src={imageUrl} 
+                        alt={title} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_LOGO; }}
+                    />
+                    <div style={{ position: 'absolute', bottom: '5px', right: '5px', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>
+                        <i className="fas fa-microphone"></i>
+                    </div>
                 </div>
-            )}
-
-            <button 
-                className="station-info-btn"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/articulo/${article.slug || article._id}`);
-                }}
-                title="Leer Noticia Completa"
-                style={{ border: 'none', cursor: 'pointer' }}
-            >
-                <i className="fas fa-external-link-alt"></i>
-            </button>
-
-            <div className="station-logo-wrapper" style={{ borderRadius: '14px' }}>
-                <img 
-                    src={finalImageUrl} 
-                    alt={finalTitle}
-                    loading="lazy"
-                    onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_LOGO; }}
-                />
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '0.65rem', background: 'var(--color-primario)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', textTransform: 'uppercase' }}>{category}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600' }}><i className="far fa-clock"></i> {date}</span>
+                    </div>
+                    <h3 style={{ fontSize: '1rem', margin: '0 0 6px 0', lineHeight: '1.3', color: 'var(--color-texto-titulos)', fontWeight: '800', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {title}
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {desc}
+                    </p>
+                </div>
+            </Link>
             
-            <div className="station-title" style={{ fontSize: '0.88rem' }}>
-                {finalTitle.trim()}
+            {/* REPRODUCTOR HTML5 NATIVO INSERTADO DIRECTAMENTE (A PRUEBA DE FALLOS) */}
+            <div style={{ padding: '10px 15px', background: '#f8fafc' }}>
+                {audioUrl ? (
+                    <audio 
+                        controls 
+                        src={audioUrl} 
+                        preload="none"
+                        style={{ width: '100%', height: '40px', outline: 'none' }}
+                    >
+                        Tu navegador no soporta audios.
+                    </audio>
+                ) : (
+                    <div style={{ padding: '10px', textAlign: 'center', color: '#ef4444', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                        <i className="fas fa-exclamation-triangle"></i> Audio no disponible
+                    </div>
+                )}
             </div>
-            
-            <span className="station-location" style={{ color: '#2563eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <i className={isThisPlaying ? "fas fa-pause-circle" : "fas fa-play-circle"}></i> 
-                {isThisPlaying ? 'Pausar' : 'Escuchar'}
-            </span>
         </div>
     );
 }
 
+// Paginación Estilizada
 function Pagination({ paginaActual, totalPaginas, queryParams }) {
     if (totalPaginas <= 1) return null;
     
@@ -563,21 +560,29 @@ function Pagination({ paginaActual, totalPaginas, queryParams }) {
     };
 
     return (
-        <div className="pagination-container" style={{ marginTop: '3.5rem', display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center' }}>
-            {paginaActual > 1 && (
-                <Link href={buildLink(prevPage)} className="pagination-btn" style={{ padding: '10px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#1e293b', fontWeight: '600', textDecoration: 'none', fontSize: '0.9rem' }}>
-                    &laquo; Anterior
+        <div className="pagination-container" style={{ marginTop: '4rem', display: 'flex', justifyContent: 'center', gap: '15px', alignItems: 'center' }}>
+            {paginaActual > 1 ? (
+                <Link href={buildLink(prevPage)} style={{ padding: '12px 24px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50px', color: '#334155', fontWeight: 'bold', textDecoration: 'none', fontSize: '0.95rem', transition: 'all 0.2s' }}>
+                    <i className="fas fa-arrow-left"></i> Anterior
                 </Link>
+            ) : (
+                <span style={{ padding: '12px 24px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '50px', color: '#94a3b8', fontWeight: 'bold', fontSize: '0.95rem', cursor: 'not-allowed' }}>
+                    <i className="fas fa-arrow-left"></i> Anterior
+                </span>
             )}
             
-            <span className="page-info" style={{ fontWeight: '700', color: '#64748b', fontSize: '0.95rem', padding: '0 8px' }}>
+            <span style={{ fontWeight: '800', color: 'var(--color-texto-titulos)', fontSize: '1rem', padding: '0 10px' }}>
                 Página {paginaActual} de {totalPaginas}
             </span>
             
-            {paginaActual < totalPaginas && (
-                <Link href={buildLink(nextPage)} className="pagination-btn" style={{ padding: '10px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#1e293b', fontWeight: '600', textDecoration: 'none', fontSize: '0.9rem' }}>
-                    Siguiente &raquo;
+            {paginaActual < totalPaginas ? (
+                <Link href={buildLink(nextPage)} style={{ padding: '12px 24px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50px', color: '#334155', fontWeight: 'bold', textDecoration: 'none', fontSize: '0.95rem', transition: 'all 0.2s' }}>
+                    Siguiente <i className="fas fa-arrow-right"></i>
                 </Link>
+            ) : (
+                <span style={{ padding: '12px 24px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '50px', color: '#94a3b8', fontWeight: 'bold', fontSize: '0.95rem', cursor: 'not-allowed' }}>
+                    Siguiente <i className="fas fa-arrow-right"></i>
+                </span>
             )}
         </div>
     );

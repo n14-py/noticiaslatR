@@ -4,21 +4,24 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
+// Renombramos el Pagination de Swiper para que no choque con tu función Pagination
+import { Autoplay, Pagination as SwiperPagination, EffectFade } from 'swiper/modules';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
-// Forzamos el entorno Edge para velocidad extrema en Cloudflare
+// Configuracion Edge para máxima velocidad en Cloudflare
 export const runtime = 'experimental-edge';
 
+// --- CONFIGURACION ---
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.noticias.lat';
 const SITE_NAME = 'Noticias.lat';
 const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
+// --- 1. SERVER SIDE PROPS ---
 export async function getServerSideProps(context) {
-    // Caché extrema en el borde (CDN): Sirve al instante como HTML estático y actualiza en segundo plano
+    // CACHÉ EXTREMO: 30 Minutos en Cloudflare para que la web vuele
     context.res.setHeader(
         'Cache-Control',
         'public, s-maxage=1800, stale-while-revalidate=86400'
@@ -26,8 +29,9 @@ export async function getServerSideProps(context) {
 
     const { query } = context;
     const page = parseInt(query.page || '1', 10);
-    const limit = 15; 
+    const limit = 13; 
     
+    // CORRECCIÓN DE PAGINACIÓN: El backend espera "pagina", no "page"
     let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&pagina=${page}&limite=${limit}`;
     
     if (query.categoria && query.categoria !== 'todos') {
@@ -77,6 +81,7 @@ export async function getServerSideProps(context) {
     }
 }
 
+// --- 2. COMPONENTE PRINCIPAL ---
 export default function Home({ initialArticles, pagination, currentCategory, currentCountry, error }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -130,8 +135,7 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                         fontFamily: 'var(--font-titulos)', 
                         color: 'var(--color-texto-titulos)',
                         borderLeft: '5px solid var(--color-primario)',
-                        paddingLeft: '15px',
-                        fontWeight: '900'
+                        paddingLeft: '15px'
                     }}>
                         {titleText}
                     </h1>
@@ -139,53 +143,57 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
 
                 <div style={{
                     opacity: loading ? 0.5 : 1,
-                    transition: 'opacity 0.2s ease',
+                    transition: 'opacity 0.3s ease',
                     pointerEvents: loading ? 'none' : 'auto'
                 }}>
                     {error || (initialArticles && initialArticles.length === 0) ? (
                         <EmptyState />
                     ) : (
-                        <div className="home-layout">
-                            {/* SLIDER IZQUIERDO (HERO) */}
-                            <div className="slider-section">
-                                <Swiper
-                                    modules={[Autoplay, Pagination, EffectFade]}
-                                    effect="fade"
-                                    spaceBetween={0}
-                                    slidesPerView={1}
-                                    pagination={{ clickable: true }}
-                                    autoplay={{ delay: 5000, disableOnInteraction: false }}
-                                    className="hero-swiper"
-                                >
-                                    {sliderArticles.map((article) => (
-                                        <SwiperSlide key={article._id}>
-                                            <HeroSlide article={article} />
-                                        </SwiperSlide>
-                                    ))}
-                                </Swiper>
-                            </div>
+                        <>
+                            <div className="home-layout">
+                                {/* SLIDER IZQUIERDO (HERO) */}
+                                <div className="slider-section">
+                                    {sliderArticles.length > 0 && (
+                                        <Swiper
+                                            modules={[Autoplay, SwiperPagination, EffectFade]}
+                                            effect="fade"
+                                            spaceBetween={0}
+                                            slidesPerView={1}
+                                            pagination={{ clickable: true }}
+                                            autoplay={{ delay: 5000, disableOnInteraction: false }}
+                                            className="hero-swiper"
+                                        >
+                                            {sliderArticles.map((article) => (
+                                                <SwiperSlide key={article._id}>
+                                                    <HeroSlide article={article} />
+                                                </SwiperSlide>
+                                            ))}
+                                        </Swiper>
+                                    )}
+                                </div>
 
-                            {/* GRILLA DERECHA / INFERIOR (RELACIONADAS) */}
-                            <div className="grid-section">
-                                <div className="bento-grid">
-                                    {gridArticles.map((article) => (
-                                        <ArticleCard 
-                                            key={article._id} 
-                                            article={article} 
-                                            isHero={false} 
-                                        />
-                                    ))}
+                                {/* GRILLA DERECHA / INFERIOR (RELACIONADAS) */}
+                                <div className="grid-section">
+                                    <div className="bento-grid">
+                                        {gridArticles.map((article) => (
+                                            <ArticleCard 
+                                                key={article._id} 
+                                                article={article} 
+                                                isHero={false} 
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
 
-                    {initialArticles && initialArticles.length > 0 && (
-                        <Pagination 
-                            currentPage={pagination.currentPage} 
-                            totalPages={pagination.totalPages} 
-                            query={router.query} 
-                        />
+                            {initialArticles && initialArticles.length > 0 && (
+                                <Pagination 
+                                    currentPage={pagination.currentPage} 
+                                    totalPages={pagination.totalPages} 
+                                    query={router.query} 
+                                />
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -216,7 +224,7 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
     );
 }
 
-// --- SUB-COMPONENTES ---
+// --- 3. SUB-COMPONENTES ---
 
 function HeroSlide({ article }) {
     const imgUrl = (article.imagen && article.imagen.startsWith('http')) ? article.imagen : PLACEHOLDER_IMG;
@@ -300,7 +308,7 @@ function HeroSlide({ article }) {
     );
 }
 
-function ArticleCard({ article }) {
+function ArticleCard({ article, isHero }) {
     const fecha = new Date(article.fecha).toLocaleDateString('es-ES', { 
         day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'
     });
@@ -309,9 +317,15 @@ function ArticleCard({ article }) {
     const hasVideo = (article.youtubeId && article.videoProcessingStatus === 'complete');
 
     return (
-        <div className="article-card">
+        <div className={`article-card ${isHero ? 'hero-item' : ''}`}>
             <Link href={`/articulo/${article._id}`} className="card-image-wrapper">
-                <img src={imgUrl} alt={article.titulo} loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }} />
+                <img 
+                    src={imgUrl} 
+                    alt={article.titulo} 
+                    loading={isHero ? "eager" : "lazy"} 
+                    onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
+                />
+                
                 {hasVideo && (
                     <div className="card-play-overlay">
                         <div className="card-play-icon">
@@ -323,7 +337,7 @@ function ArticleCard({ article }) {
             <div className="card-content">
                 <div className="card-tags">
                     <span className="tag">{article.categoria}</span>
-                    {hasVideo && <span className="tag" style={{background: '#ef4444', color: '#fff'}}>VIDEO</span>}
+                    {hasVideo && <span className="tag" style={{background: '#000', color: '#fff'}}>VIDEO</span>}
                 </div>
                 
                 <h3 className="card-title">
@@ -332,7 +346,7 @@ function ArticleCard({ article }) {
                     </Link>
                 </h3>
                 <p className="card-excerpt">
-                    {article.descripcion ? article.descripcion.substring(0, 90) + '...' : ''}
+                    {article.descripcion ? article.descripcion.substring(0, isHero ? 200 : 100) + '...' : ''}
                 </p>
                 <div className="card-meta">
                     <span><i className="far fa-clock"></i> {fecha}</span>

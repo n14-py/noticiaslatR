@@ -3,24 +3,24 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 
-// NOTA ARQUITECTÓNICA: Se eliminó 'export const runtime = 'experimental-edge';'
-// Motivo: Bloquea la generación de archivos HTML estáticos y causa el pantallazo blanco.
+// Configuracion Edge estricta exigida por Cloudflare Pages
+export const runtime = 'experimental-edge';
 
-export async function getStaticPaths() {
-    return {
-        paths: [], // Genera los HTML físicos bajo demanda al primer ingreso
-        fallback: 'blocking' // El primer usuario espera la compilación, el resto recibe el HTML
-    };
-}
+export async function getServerSideProps(context) {
+    // CACHÉ DE CDN CLOUDFLARE: Esto convierte la respuesta en HTML guardado en los nodos Edge por 24hs.
+    // Si la API se cae, Cloudflare seguirá sirviendo el HTML congelado sin procesar el servidor.
+    context.res.setHeader(
+        'Cache-Control',
+        'public, s-maxage=86400, stale-while-revalidate=86400'
+    );
 
-export async function getStaticProps(context) {
     const { id } = context.params;
     const API_URL = 'https://api.noticias.lat';
 
     try {
         const res = await fetch(`${API_URL}/api/article/${id}`);
         if (!res.ok) {
-            return { notFound: true, revalidate: 60 };
+            return { notFound: true };
         }
         const article = await res.json();
 
@@ -32,12 +32,11 @@ export async function getStaticProps(context) {
             props: { 
                 article, 
                 recommended 
-            },
-            revalidate: 86400 // El archivo HTML sobrevive 24 horas (86400s) sin golpear tu API
+            }
         };
     } catch (error) {
         console.error("Error cargando artículo:", error);
-        return { notFound: true, revalidate: 60 };
+        return { notFound: true };
     }
 }
 

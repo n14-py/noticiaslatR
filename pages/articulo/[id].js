@@ -3,16 +3,17 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 
-// Configuracion Edge estricta exigida por Cloudflare Pages
+// Configuracion Edge estricta exigida
 export const runtime = 'experimental-edge';
 
 export async function getServerSideProps(context) {
-    // CACHÉ DE CDN CLOUDFLARE: Esto convierte la respuesta en HTML guardado en los nodos Edge por 24hs.
-    // Si la API se cae, Cloudflare seguirá sirviendo el HTML congelado sin procesar el servidor.
-    context.res.setHeader(
-        'Cache-Control',
-        'public, s-maxage=86400, stale-while-revalidate=86400'
-    );
+    // SECUESTRO DE CDN CLOUDFLARE: Forzamos a la CDN a congelar la respuesta como HTML puro.
+    // Esto es el equivalente a HTML estático en arquitecturas Edge. Si la API cae, esto sobrevive 24hs.
+    if (context.res && context.res.setHeader) {
+        context.res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400');
+        context.res.setHeader('Cloudflare-CDN-Cache-Control', 's-maxage=86400, stale-while-revalidate=86400');
+        context.res.setHeader('CDN-Cache-Control', 's-maxage=86400, stale-while-revalidate=86400');
+    }
 
     const { id } = context.params;
     const API_URL = 'https://api.noticias.lat';
@@ -155,7 +156,7 @@ export default function ArticlePage({ article, recommended }) {
                                 controls 
                                 src={article.audioUrl} 
                                 style={{ width: '100%', height: '45px', outline: 'none', borderRadius: '8px' }}
-                                preload="metadata"
+                                preload="none" // Destruye el bloqueo de carga de MBs de audio iniciales
                             >
                                 Tu navegador no soporta el elemento de audio.
                             </audio>
@@ -166,6 +167,7 @@ export default function ArticlePage({ article, recommended }) {
                         <img 
                             src={imgUrl} 
                             alt={article.textoImagen || article.titulo} 
+                            loading="lazy" // Lazy Load brutal para salvar red
                             style={{ width: '100%', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', objectFit: 'cover', maxHeight: '500px' }}
                             onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder.jpg'; }}
                         />
@@ -201,6 +203,7 @@ export default function ArticlePage({ article, recommended }) {
                             <div className="video-responsive-wrapper" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
                                 <iframe 
                                     src={`https://www.youtube.com/embed/${article.youtubeId}?autoplay=0&rel=0`} 
+                                    loading="lazy" // No carga el iframe bloqueante hasta hacer scroll
                                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                     allowFullScreen
@@ -240,6 +243,7 @@ export default function ArticlePage({ article, recommended }) {
                                             <img 
                                                 src={(rec.imagen && rec.imagen.startsWith('http')) ? rec.imagen : '/images/placeholder.jpg'} 
                                                 alt={rec.titulo} 
+                                                loading="lazy"
                                                 onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder.jpg'; }}
                                             />
                                             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -294,6 +298,7 @@ export default function ArticlePage({ article, recommended }) {
                                             <img 
                                                 src={(rec.imagen && rec.imagen.startsWith('http')) ? rec.imagen : '/images/placeholder.jpg'} 
                                                 alt={rec.titulo} 
+                                                loading="lazy"
                                                 onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder.jpg'; }}
                                             />
                                             <div className="bento-category-tag">{rec.categoria}</div>

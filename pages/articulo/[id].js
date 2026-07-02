@@ -6,20 +6,21 @@ import Layout from '../../components/Layout';
 // Configuracion Edge estricta exigida
 export const runtime = 'experimental-edge';
 
-export async function getServerSideProps(context) {
-    // CACHÉ DE 24 HORAS (86400 segundos) - Actúa como archivo HTML estático en CDN
-    context.res.setHeader(
-        'Cache-Control',
-        'public, s-maxage=86400, stale-while-revalidate=86400'
-    );
+export async function getStaticPaths() {
+    return {
+        paths: [], // Genera los HTML bajo demanda, no en tiempo de build
+        fallback: 'blocking' // El primer usuario espera la generación, los demás reciben el HTML estático
+    };
+}
 
+export async function getStaticProps(context) {
     const { id } = context.params;
     const API_URL = 'https://api.noticias.lat';
 
     try {
         const res = await fetch(`${API_URL}/api/article/${id}`);
         if (!res.ok) {
-            return { notFound: true };
+            return { notFound: true, revalidate: 60 };
         }
         const article = await res.json();
 
@@ -31,11 +32,12 @@ export async function getServerSideProps(context) {
             props: { 
                 article, 
                 recommended 
-            }
+            },
+            revalidate: 86400 // Regenera el HTML en background cada 24 horas
         };
     } catch (error) {
         console.error("Error cargando artículo:", error);
-        return { notFound: true };
+        return { notFound: true, revalidate: 60 };
     }
 }
 

@@ -14,11 +14,12 @@ const PLACEHOLDER_IMG = '/images/placeholder.jpg';
 
 // --- 1. SERVER SIDE PROPS ---
 export async function getServerSideProps(context) {
-    // CACHÉ EXTREMO: 30 Minutos en Cloudflare para que la web vuele
-    context.res.setHeader(
-        'Cache-Control',
-        'public, s-maxage=1800, stale-while-revalidate=86400'
-    );
+    // SECUESTRO DE CDN CLOUDFLARE: Congelamos el HTML en los nodos Edge por 1 HORA (3600 segundos).
+    if (context.res && context.res.setHeader) {
+        context.res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=3600');
+        context.res.setHeader('Cloudflare-CDN-Cache-Control', 's-maxage=3600, stale-while-revalidate=3600');
+        context.res.setHeader('CDN-Cache-Control', 's-maxage=3600, stale-while-revalidate=3600');
+    }
 
     const { query } = context;
     const page = parseInt(query.page || '1', 10);
@@ -239,7 +240,7 @@ function ArticleHero({ article }) {
                 <img 
                     src={imgUrl} 
                     alt={article.titulo} 
-                    loading="eager"
+                    loading="eager" // Mantenemos eager solo aquí para métricas LCP iniciales rapidísimas
                     style={{ width: '100%', display: 'block' }}
                     onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
                 />
@@ -270,6 +271,7 @@ function ArticleSide({ article }) {
                 <img 
                     src={imgUrl} 
                     alt={article.titulo} 
+                    loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
                     onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
                     onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
@@ -302,6 +304,7 @@ function ArticleDenseList({ article }) {
                 <img 
                     src={imgUrl} 
                     alt={article.titulo} 
+                    loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }}
                 />

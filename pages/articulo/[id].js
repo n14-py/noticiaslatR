@@ -3,13 +3,13 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 
-// Configuracion Edge estricta exigida
-export const runtime = 'experimental-edge';
+// NOTA ARQUITECTÓNICA: Se eliminó 'export const runtime = 'experimental-edge';'
+// Motivo: Bloquea la generación de archivos HTML estáticos y causa el pantallazo blanco.
 
 export async function getStaticPaths() {
     return {
-        paths: [], // Genera los HTML bajo demanda, no en tiempo de build
-        fallback: 'blocking' // El primer usuario espera la generación, los demás reciben el HTML estático
+        paths: [], // Genera los HTML físicos bajo demanda al primer ingreso
+        fallback: 'blocking' // El primer usuario espera la compilación, el resto recibe el HTML
     };
 }
 
@@ -33,7 +33,7 @@ export async function getStaticProps(context) {
                 article, 
                 recommended 
             },
-            revalidate: 86400 // Regenera el HTML en background cada 24 horas
+            revalidate: 86400 // El archivo HTML sobrevive 24 horas (86400s) sin golpear tu API
         };
     } catch (error) {
         console.error("Error cargando artículo:", error);

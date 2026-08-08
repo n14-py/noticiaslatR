@@ -3,6 +3,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 
+import AppBanner from '../../components/AppBanner';
+
 // Configuracion Edge estricta exigida
 export const runtime = 'experimental-edge';
 
@@ -229,6 +231,8 @@ export default function ArticlePage({ article, recommended }) {
                     </div>
                 </article>
 
+
+
                 {/* COLUMNA DERECHA: STICKY SIDEBAR DIVERSIFICADO */}
                 <aside className="article-sidebar">
                     <div className="sticky-container" style={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -280,6 +284,8 @@ export default function ArticlePage({ article, recommended }) {
                     </div>
                 </aside>
             </div>
+
+            
 
             {/* SECCIÓN INFERIOR: BENTO GRID ASIMÉTRICO */}
             {bottomGrid.length > 0 && (
@@ -455,6 +461,10 @@ export default function ArticlePage({ article, recommended }) {
                     }
                 }
             `}</style>
+            
+        {/* AQUÍ PEGAS EL BANNER, justo antes de que cierre el Layout */}
+            <AppBanner />
+        
         </Layout>
     );
 }

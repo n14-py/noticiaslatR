@@ -3,3 +3,7 @@ Allow: /
 
 User-agent: Mediapartners-Google
 Allow: /
+
+
+Sitemap: https://www.noticias.lat/sitemap.xml
+Sitemap:https://www.noticias.lat/sitemap-static.xml

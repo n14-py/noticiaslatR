@@ -171,10 +171,10 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                                 </div>
                             )}
 
-                            {/* SECCIÓN 2: LISTA DENSA DE NOTICIAS CON MUCHO TEXTO */}
+                            {/* SECCI N 2: LISTA DENSA DE NOTICIAS CON MUCHO TEXTO */}
                             {listArticles.length > 0 && (
                                 <div style={{ marginBottom: '3rem' }}>
-                                    <h2 style={{ fontSize: '1.5rem', borderLeft: '4px solid #ff0000', paddingLeft: '10px', marginBottom: '1.5rem' }}>Más Relevantes</h2>
+                                    <h2 style={{ fontSize: '1.5rem', borderLeft: '4px solid #ff0000', paddingLeft: '10px', marginBottom: '1.5rem' }}>M s Relevantes</h2>
                                     <div className="dense-list-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '25px' }}>
                                         {listArticles.map(article => (
                                             <ArticleDenseList key={article._id} article={article} />
@@ -183,10 +183,43 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                                 </div>
                             )}
 
-                            {/* SECCIÓN 3: GRILLA ESTÁNDAR PARA EL RESTO */}
+                            {/* --- NUEVA SECCIÓN: PROMOCIÓN DE LA APP --- */}
+                            <div style={{
+                                background: 'linear-gradient(135deg, #0f172a 0%, #1e40af 100%)',
+                                borderRadius: '16px',
+                                padding: '2.5rem 2rem',
+                                marginBottom: '3rem',
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '20px',
+                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)'
+                            }}>
+                                <div style={{ flex: '1 1 500px' }}>
+                                    <span style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        ¡Nueva App Disponible!
+                                    </span>
+                                    <h2 style={{ color: 'white', fontSize: '2.2rem', margin: '15px 0 10px 0', fontWeight: '900', lineHeight: '1.2' }}>
+                                        Lleva Noticias Lat en tu bolsillo
+                                    </h2>
+                                    <p style={{ color: '#cbd5e1', fontSize: '1.1rem', margin: '0 0 20px 0', lineHeight: '1.5' }}>
+                                        Resúmenes con IA, radio 24/7, videos cortos y modo Premium. Descarga nuestra app oficial para Android y experimenta la información a otro nivel.
+                                    </p>
+                                    <a href="https://play.google.com/store/apps/details?id=com.noticiaslat.app" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'white', color: '#0f172a', padding: '14px 28px', borderRadius: '50px', fontWeight: 'bold', textDecoration: 'none', transition: 'transform 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                                        <i className="fab fa-google-play" style={{ color: '#10b981', fontSize: '1.4rem' }}></i>
+                                        Descargar en Google Play
+                                    </a>
+                                </div>
+                                <div style={{ flex: '0 1 200px', textAlign: 'center', margin: '0 auto' }}>
+                                    <i className="fas fa-mobile-alt" style={{ fontSize: '8rem', color: '#3b82f6', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.3))' }}></i>
+                                </div>
+                            </div>
+
+                            {/* SECCI N 3: GRILLA EST NDAR PARA EL RESTO */}
                             {gridArticles.length > 0 && (
                                 <div style={{ marginBottom: '3rem', paddingTop: '2rem', borderTop: '1px solid #e2e8f0' }}>
-                                    <h2 style={{ fontSize: '1.5rem', borderLeft: '4px solid var(--color-primario)', paddingLeft: '10px', marginBottom: '1.5rem' }}>Últimas Actualizaciones</h2>
+                                    <h2 style={{ fontSize: '1.5rem', borderLeft: '4px solid var(--color-primario)', paddingLeft: '10px', marginBottom: '1.5rem' }}> ltimas Actualizaciones</h2>
                                     <div className="bento-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
                                         {gridArticles.map(article => (
                                             <ArticleCard key={article._id} article={article} />

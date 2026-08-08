@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.noticiaslat.app",
+      "sha256_cert_fingerprints": [
+        "35:FB:B9:FC:48:96:9E:94:3B:AC:D2:56:A7:56:B7:A1:4C:B5:C1:97:FB:35:9E:32:D5:25:A3:FC:3D:AB:91:BC"
+      ]
+    }
+  }
+]

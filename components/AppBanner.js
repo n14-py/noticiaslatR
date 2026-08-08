@@ -2,12 +2,17 @@ import { useState, useEffect } from 'react';
 
 export default function AppBanner() {
     const [isVisible, setIsVisible] = useState(false);
+    const [intentUrl, setIntentUrl] = useState('');
 
     useEffect(() => {
-        // Muestra el cuadro 2 segundos después de entrar a la noticia
+        // Armamos el enlace "Intent" dinámico según la URL donde esté el usuario
+        const currentPath = window.location.host + window.location.pathname; 
+        const link = `intent://${currentPath}#Intent;scheme=https;package=com.noticiaslat.app;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.noticiaslat.app;end;`;
+        setIntentUrl(link);
+
+        // Muestra el cuadro 2 segundos después
         const timer = setTimeout(() => {
             const bannerClosed = localStorage.getItem('appBannerClosed');
-            // Si el usuario no lo ha cerrado antes, se muestra
             if (!bannerClosed) {
                 setIsVisible(true);
             }
@@ -18,7 +23,6 @@ export default function AppBanner() {
 
     const handleClose = () => {
         setIsVisible(false);
-        // Guarda en la memoria del navegador que ya lo cerró para no molestar en cada noticia
         localStorage.setItem('appBannerClosed', 'true');
     };
 
@@ -33,9 +37,7 @@ export default function AppBanner() {
                 </div>
                 <div className="app-promo-actions">
                     <a 
-                        href="https://play.google.com/store/apps/details?id=com.noticiaslat.app" 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
+                        href={intentUrl} 
                         className="btn-download"
                     >
                         Abrir en la App

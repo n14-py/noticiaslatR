@@ -40,6 +40,18 @@ export async function getServerSideProps(context) {
         if (!res.ok) throw new Error('Error fetching articles');
         const data = await res.json();
 
+        // --- NUEVO: FETCH DE ANUNCIOS WEB ---
+        let webAds = [];
+        try {
+            const adsRes = await fetch(`${API_URL}/api/ads/active?plataforma=web`);
+            if (adsRes.ok) {
+                const adsData = await adsRes.json();
+                if (adsData.success && adsData.ads) {
+                    webAds = adsData.ads;
+                }
+            }
+        } catch (e) { console.error("Error cargando anuncios web:", e); }
+
         let articles = [];
         if (data.articulos && Array.isArray(data.articulos)) {
             articles = data.articulos;
@@ -60,7 +72,8 @@ export async function getServerSideProps(context) {
                     totalArticles: data.totalArticulos || data.totalDocs || 0
                 },
                 currentCategory: query.categoria || null,
-                currentCountry: query.pais || null
+                currentCountry: query.pais || null,
+                webAds // Pasamos los anuncios a la web
             }
         };
     } catch (error) {
@@ -76,9 +89,49 @@ export async function getServerSideProps(context) {
 }
 
 // --- 2. COMPONENTE PRINCIPAL ---
-export default function Home({ initialArticles, pagination, currentCategory, currentCountry, error }) {
+export default function Home({ initialArticles, pagination, currentCategory, currentCountry, error, webAds }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    
+    // Estados separados para Banner y Pop-up
+    const [bannerAd, setBannerAd] = useState(null);
+    const [interstitialAd, setInterstitialAd] = useState(null);
+    const [showInterstitial, setShowInterstitial] = useState(false);
+
+    useEffect(() => {
+        if (webAds && webAds.length > 0) {
+            // Filtramos los formatos
+            const banners = webAds.filter(ad => ad.tipo === 'banner_web');
+            const interstitials = webAds.filter(ad => ad.tipo === 'interstitial_app'); // Usamos este formato para el Pop-up web también
+
+            // 1. Configurar Banner
+            if (banners.length > 0) {
+                const randomBanner = banners[Math.floor(Math.random() * banners.length)];
+                setBannerAd(randomBanner);
+                fetch('https://api.noticias.lat/api/ads/view', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adId: randomBanner._id, plataforma: 'web' })
+                }).catch(() => {});
+            }
+
+            // 2. Configurar Pop-up (Interstitial)
+            if (interstitials.length > 0) {
+                const randomInter = interstitials[Math.floor(Math.random() * interstitials.length)];
+                setInterstitialAd(randomInter);
+                
+                // Retrasamos el pop-up 3 segundos para no asustar al lector de golpe
+                setTimeout(() => {
+                    setShowInterstitial(true);
+                    fetch('https://api.noticias.lat/api/ads/view', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ adId: randomInter._id, plataforma: 'web' })
+                    }).catch(() => {});
+                }, 3000);
+            }
+        }
+    }, [webAds]);
     
     useEffect(() => {
         const handleStart = () => setLoading(true);
@@ -179,6 +232,35 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                                         {listArticles.map(article => (
                                             <ArticleDenseList key={article._id} article={article} />
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* --- BANNER PUBLICITARIO WEB --- */}
+                            {bannerAd && (
+                                <div style={{ marginBottom: '3rem', textAlign: 'center', width: '100%', background: '#fff', padding: '15px', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>Anuncio Publicitario</span>
+                                    </div>
+                                    <a href={`https://api.noticias.lat/api/ads/click?adId=${bannerAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', width: '100%', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                                        <img src={bannerAd.mediaUrl} alt={bannerAd.nombreCampana} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                                    </a>
+                                </div>
+                            )}
+
+                            {/* --- POP-UP INTERSTITIAL WEB --- */}
+                            {showInterstitial && interstitialAd && (
+                                <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(15, 23, 42, 0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(5px)' }}>
+                                    <div style={{ position: 'relative', width: '90%', maxWidth: '400px', background: '#fff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
+                                        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
+                                            <button onClick={() => setShowInterstitial(false)} style={{ background: '#ef4444', color: '#fff', border: 'none', width: '35px', height: '35px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>X</button>
+                                        </div>
+                                        <div style={{ padding: '10px 15px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                            Anuncio Patrocinado
+                                        </div>
+                                        <a href={`https://api.noticias.lat/api/ads/click?adId=${interstitialAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" onClick={() => setShowInterstitial(false)}>
+                                            <img src={interstitialAd.mediaUrl} alt={interstitialAd.nombreCampana} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
+                                        </a>
                                     </div>
                                 </div>
                             )}

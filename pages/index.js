@@ -98,11 +98,13 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
     const [interstitialAd, setInterstitialAd] = useState(null);
     const [showInterstitial, setShowInterstitial] = useState(false);
 
-    useEffect(() => {
+useEffect(() => {
         if (webAds && webAds.length > 0) {
-            // Filtramos los formatos
-            const banners = webAds.filter(ad => ad.tipo === 'banner_web');
-            const interstitials = webAds.filter(ad => ad.tipo === 'interstitial_app'); // Usamos este formato para el Pop-up web también
+            // ¡MAGIA OMNICANAL! 
+            // Como el cliente marcó "mostrarEnWeb: true", ya no nos importa el "tipo" original.
+            // Tomamos todos para que puedan salir como Banners o Pop-ups.
+            const banners = webAds;
+            const interstitials = webAds;
 
             // 1. Configurar Banner
             if (banners.length > 0) {
@@ -243,7 +245,11 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                                         <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>Anuncio Publicitario</span>
                                     </div>
                                     <a href={`https://api.noticias.lat/api/ads/click?adId=${bannerAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', width: '100%', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                        <img src={bannerAd.mediaUrl} alt={bannerAd.nombreCampana} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                                        {bannerAd.mediaUrl.toLowerCase().endsWith('.mp4') ? (
+                                            <video src={bannerAd.mediaUrl} autoPlay loop muted playsInline style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                                        ) : (
+                                            <img src={bannerAd.mediaUrl} alt={bannerAd.nombreCampana} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                                        )}
                                     </a>
                                 </div>
                             )}
@@ -259,7 +265,11 @@ export default function Home({ initialArticles, pagination, currentCategory, cur
                                             Anuncio Patrocinado
                                         </div>
                                         <a href={`https://api.noticias.lat/api/ads/click?adId=${interstitialAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" onClick={() => setShowInterstitial(false)}>
-                                            <img src={interstitialAd.mediaUrl} alt={interstitialAd.nombreCampana} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
+                                            {interstitialAd.mediaUrl.toLowerCase().endsWith('.mp4') ? (
+                                                <video src={interstitialAd.mediaUrl} autoPlay loop muted playsInline style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
+                                            ) : (
+                                                <img src={interstitialAd.mediaUrl} alt={interstitialAd.nombreCampana} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
+                                            )}
                                         </a>
                                     </div>
                                 </div>

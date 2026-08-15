@@ -65,9 +65,10 @@ export default function ArticlePage({ article, recommended, webAds }) {
     const [showInterstitial, setShowInterstitial] = useState(false);
 
     useEffect(() => {
-        if (webAds && webAds.length > 0) {
-            const banners = webAds.filter(ad => ad.tipo === 'banner_web');
-            const interstitials = webAds.filter(ad => ad.tipo === 'interstitial_app');
+            if (webAds && webAds.length > 0) {
+            // Permitimos cualquier formato que haya sido marcado con mostrarEnWeb: true
+            const banners = webAds;
+            const interstitials = webAds;
 
             if (banners.length > 0) {
                 const randomBanner = banners[Math.floor(Math.random() * banners.length)];
@@ -162,7 +163,11 @@ export default function ArticlePage({ article, recommended, webAds }) {
                             Anuncio Patrocinado
                         </div>
                         <a href={`https://api.noticias.lat/api/ads/click?adId=${interstitialAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" onClick={() => setShowInterstitial(false)}>
-                            <img src={interstitialAd.mediaUrl} alt={interstitialAd.nombreCampana} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
+                            {interstitialAd.mediaUrl.toLowerCase().endsWith('.mp4') ? (
+                                <video src={interstitialAd.mediaUrl} autoPlay loop muted playsInline style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
+                            ) : (
+                                <img src={interstitialAd.mediaUrl} alt={interstitialAd.nombreCampana} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
+                            )}
                         </a>
                     </div>
                 </div>
@@ -261,11 +266,15 @@ export default function ArticlePage({ article, recommended, webAds }) {
                                 <div key={index}>
                                     <p style={{ marginBottom: '1.5rem' }}>{p}</p>
                                     
-                                    {isMiddle && bannerAd && (
+                                        {isMiddle && bannerAd && (
                                         <div style={{ margin: '2.5rem 0', textAlign: 'center', background: '#fff', padding: '15px', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                                             <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>Patrocinado</span>
                                             <a href={`https://api.noticias.lat/api/ads/click?adId=${bannerAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', width: '100%', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                                <img src={bannerAd.mediaUrl} alt={bannerAd.nombreCampana} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                                                {bannerAd.mediaUrl.toLowerCase().endsWith('.mp4') ? (
+                                                    <video src={bannerAd.mediaUrl} autoPlay loop muted playsInline style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                                                ) : (
+                                                    <img src={bannerAd.mediaUrl} alt={bannerAd.nombreCampana} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                                                )}
                                             </a>
                                         </div>
                                     )}

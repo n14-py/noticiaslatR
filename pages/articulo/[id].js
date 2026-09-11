@@ -226,17 +226,6 @@ export default function ArticlePage({ article, recommended, unavailable, missing
             </div>
           )}
 
-          {article.enlaceOriginal && (
-            <div className="article-source-link">
-              <p>
-                Fuente consultada:{' '}
-                <a href={article.enlaceOriginal} target="_blank" rel="noopener noreferrer">
-                  {getSourceName(article)}
-                </a>
-              </p>
-            </div>
-          )}
-
           <div className="editorial-note">
             <p>
               Esta nota fue producida por la redacción de Noticias.lat: verificamos la información en fuentes

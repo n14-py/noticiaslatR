@@ -96,7 +96,7 @@ ${children}
 }
 
 async function buildNewsSitemap() {
-  const { articles } = await fetchArticles({ pagina: 1, limite: 50 });
+  const { articles } = await fetchArticles({ pagina: 1, limite: 12 });
   const twoDaysAgo = Date.now() - 48 * 60 * 60 * 1000;
   const recent = articles.filter((article) => {
     const time = new Date(article.fecha).getTime();

@@ -21,13 +21,20 @@ export async function getServerSideProps(context) {
     setCacheHeaders(context.res, 1800);
     return { props: { article, recommended } };
   } catch (error) {
-    if (error.status === 404) return { notFound: true };
+    if (error.status === 404 || error.status === 400 || error.status === 410) {
+      if (context.res) {
+        context.res.statusCode = 404;
+        context.res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        context.res.setHeader('Cache-Control', 'public, s-maxage=600');
+      }
+      return { props: { article: null, recommended: [], missing: true } };
+    }
     setUnavailable(context.res, 120);
     return { props: { article: null, recommended: [], unavailable: true } };
   }
 }
 
-export default function ArticlePage({ article, recommended, unavailable }) {
+export default function ArticlePage({ article, recommended, unavailable, missing }) {
   const [progress, setProgress] = useState(0);
   const [bannerAd, setBannerAd] = useState(null);
 
@@ -53,6 +60,22 @@ export default function ArticlePage({ article, recommended, unavailable }) {
         .catch(() => {});
     });
   }, []);
+
+  if (missing) {
+    return (
+      <Layout noindex>
+        <Head>
+          <title>Noticia no encontrada | {SITE_NAME}</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
+        <div className="container static-page-container" style={{ textAlign: 'center' }}>
+          <h1>Esta noticia ya no existe</h1>
+          <p>La URL no está en nuestro archivo. Google no debe volver a rastrearla.</p>
+          <Link href="/" className="play-btn">Volver a la portada</Link>
+        </div>
+      </Layout>
+    );
+  }
 
   if (unavailable || !article) {
     return (

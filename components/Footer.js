@@ -12,14 +12,24 @@ export default function Footer() {
             Noticias<span className="dot">.lat</span>
           </div>
           <p className="footer-desc">
-            Medio digital de Latinoamérica. Cada noticia es verificada y reescrita por nuestra redacción
-            con el sello de Noticias.lat. También en la app oficial para Android.
+            Medio digital de Latinoamérica y el mundo. Producimos unas 300 noticias al día, verificadas
+            y reescritas con el sello de Noticias.lat. Más de 500 mil personas nos ven cada mes en YouTube.
+            También en la app oficial para Android.
           </p>
           <div className="footer-social-icons">
             <a href="https://www.instagram.com/noticias.lat" target="_blank" rel="noreferrer" aria-label="Instagram">
               <i className="fab fa-instagram"></i>
             </a>
-            <a href="https://www.youtube.com/@Noticiaslat-3" target="_blank" rel="noreferrer" aria-label="YouTube">
+            <a href="https://www.youtube.com/@Noticiaslat-3" target="_blank" rel="noreferrer" aria-label="YouTube Noticiaslat-3">
+              <i className="fab fa-youtube"></i>
+            </a>
+            <a href="https://www.youtube.com/@noticias-lat" target="_blank" rel="noreferrer" aria-label="YouTube noticias-lat">
+              <i className="fab fa-youtube"></i>
+            </a>
+            <a href="https://www.youtube.com/@NoticiasLat-2" target="_blank" rel="noreferrer" aria-label="YouTube NoticiasLat-2">
+              <i className="fab fa-youtube"></i>
+            </a>
+            <a href="https://www.youtube.com/@NoticiasLat1" target="_blank" rel="noreferrer" aria-label="YouTube NoticiasLat1">
               <i className="fab fa-youtube"></i>
             </a>
             <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label="Google Play">

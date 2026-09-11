@@ -106,6 +106,20 @@ export default function ArticlePage({ article, recommended, unavailable, missing
   const sidebarList = recommended.slice(5, 9);
   const bottomGrid = recommended.slice(0, 6);
 
+  // Igual que 1f49f7a: el badge muestra la fuente, no "Redacción Noticias.lat"
+  const getSourceName = () => {
+    if (article.fuente) return article.fuente;
+    if (article.enlaceOriginal) {
+      try {
+        return new URL(article.enlaceOriginal).hostname.replace('www.', '');
+      } catch (e) {
+        return 'Agencia de Noticias';
+      }
+    }
+    return 'Redacción';
+  };
+  const sourceName = getSourceName();
+
   return (
     <Layout>
       <Head>
@@ -117,7 +131,7 @@ export default function ArticlePage({ article, recommended, unavailable, missing
         <meta property="og:image" content={imgUrl} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonical} />
-        <meta name="author" content="Redacción Noticias.lat" />
+        <meta name="author" content={sourceName} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(newsArticleSchema(article)) }} />
       </Head>
 
@@ -136,7 +150,7 @@ export default function ArticlePage({ article, recommended, unavailable, missing
             <div className="article-meta-row" style={{ justifyContent: 'flex-start', borderTop: 'none', padding: '0 0 1.2rem 0', marginBottom: 0 }}>
               <div className="meta-item"><i className="far fa-calendar-alt"></i><span>{fechaFormat}</span></div>
               <div className="meta-item"><i className="fas fa-globe-americas"></i><span>{article.pais ? article.pais.toUpperCase() : 'LATAM'}</span></div>
-              <div className="meta-item"><span className="source-badge">{getSourceName(article)}</span></div>
+              <div className="meta-item"><span className="source-badge">{sourceName}</span></div>
             </div>
           </div>
 
@@ -209,23 +223,6 @@ export default function ArticlePage({ article, recommended, unavailable, missing
             })}
           </div>
 
-          {article.youtubeId && (
-            <div className="youtube-video-container">
-              <h3>
-                <i className="fab fa-youtube" style={{ color: '#ff0000' }}></i> Cobertura en video
-              </h3>
-              <div className="video-responsive-wrapper">
-                <iframe
-                  src={`https://www.youtube.com/embed/${article.youtubeId}?autoplay=0&rel=0`}
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title="Video de la noticia"
-                ></iframe>
-              </div>
-            </div>
-          )}
-
           <div className="editorial-note">
             <p>
               Esta nota fue producida por la redacción de Noticias.lat: verificamos la información en fuentes
@@ -241,6 +238,24 @@ export default function ArticlePage({ article, recommended, unavailable, missing
               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonical)}`} target="_blank" rel="noreferrer" className="share-btn-facebook share-chip"><i className="fab fa-facebook-f"></i> Facebook</a>
             </div>
           </div>
+
+          {article.youtubeId && article.videoProcessingStatus === 'complete' && (
+            <div className="youtube-video-container" style={{ marginTop: '3rem', borderTop: '2px solid #f1f5f9', paddingTop: '2rem' }}>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--color-texto-titulos)' }}>
+                <i className="fab fa-youtube" style={{ color: '#ff0000' }}></i> Cobertura en Video
+              </h3>
+              <div className="video-responsive-wrapper" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${article.youtubeId}?autoplay=0&rel=0`}
+                  loading="lazy"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title="Video de la noticia"
+                ></iframe>
+              </div>
+            </div>
+          )}
         </article>
 
         <aside className="article-sidebar">
@@ -302,16 +317,4 @@ export default function ArticlePage({ article, recommended, unavailable, missing
       <AppBanner />
     </Layout>
   );
-}
-
-function getSourceName(article) {
-  if (article.fuente) return article.fuente;
-  if (article.enlaceOriginal) {
-    try {
-      return new URL(article.enlaceOriginal).hostname.replace(/^www\./, '');
-    } catch {
-      return 'Agencia de noticias';
-    }
-  }
-  return 'Redacción';
 }

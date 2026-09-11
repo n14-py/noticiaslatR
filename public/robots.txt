@@ -1,9 +1,11 @@
 User-agent: *
 Allow: /
+Disallow: /miembros
+Disallow: /juegos
 
 User-agent: Mediapartners-Google
 Allow: /
 
-
 Sitemap: https://www.noticias.lat/sitemap.xml
-Sitemap:https://www.noticias.lat/sitemap-static.xml
+Sitemap: https://www.noticias.lat/sitemap-static.xml
+Sitemap: https://www.noticias.lat/sitemap-news.xml

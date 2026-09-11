@@ -1,556 +1,274 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
-
 import AppBanner from '../../components/AppBanner';
+import { fetchArticleById, fetchRecommended, setCacheHeaders, setUnavailable } from '../../lib/api';
+import { SITE_NAME, SITE_URL } from '../../lib/site';
+import { jsonLd, newsArticleSchema } from '../../lib/seo';
 
-// Configuracion Edge estricta exigida
 export const runtime = 'experimental-edge';
 
 export async function getServerSideProps(context) {
-    // SECUESTRO DE CDN CLOUDFLARE: Forzamos a la CDN a congelar la respuesta como HTML puro.
-    // Esto es el equivalente a HTML estático en arquitecturas Edge. Si la API cae, esto sobrevive 24hs.
-    if (context.res && context.res.setHeader) {
-        context.res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400');
-        context.res.setHeader('Cloudflare-CDN-Cache-Control', 's-maxage=86400, stale-while-revalidate=86400');
-        context.res.setHeader('CDN-Cache-Control', 's-maxage=86400, stale-while-revalidate=86400');
+  const { id } = context.params;
+
+  try {
+    const article = await fetchArticleById(id);
+    if (!article || !article._id) {
+      return { notFound: true };
     }
-
-    const { id } = context.params;
-    const API_URL = 'https://api.noticias.lat';
-
-    try {
-        const res = await fetch(`${API_URL}/api/article/${id}`);
-        if (!res.ok) {
-            return { notFound: true };
-        }
-        const article = await res.json();
-
-        // Obtenemos más recomendaciones (el endpoint trae 12 por defecto)
-// Obtenemos más recomendaciones (el endpoint trae 12 por defecto)
-        const recRes = await fetch(`${API_URL}/api/articles/recommended?sitio=noticias.lat&categoria=${article.categoria}&excludeId=${id}`);
-        const recommended = recRes.ok ? await recRes.json() : [];
-
-        // --- FETCH DE ANUNCIOS WEB ---
-        let webAds = [];
-        try {
-            const adsRes = await fetch(`${API_URL}/api/ads/active?plataforma=web`);
-            if (adsRes.ok) {
-                const adsData = await adsRes.json();
-                if (adsData.success && adsData.ads) webAds = adsData.ads;
-            }
-        } catch (e) {}
-
-        return {
-            props: { 
-                article, 
-                recommended,
-                webAds
-            }
-        };
-    } catch (error) {
-        console.error("Error cargando artículo:", error);
-        return { notFound: true };
+    const recommended = await fetchRecommended(id, article.categoria);
+    setCacheHeaders(context.res, 1800);
+    return { props: { article, recommended } };
+  } catch (error) {
+    if (error.status === 404 || error.status === 400 || error.status === 410) {
+      if (context.res) {
+        context.res.statusCode = 404;
+        context.res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        context.res.setHeader('Cache-Control', 'public, s-maxage=600');
+      }
+      return { props: { article: null, recommended: [], missing: true } };
     }
+    setUnavailable(context.res, 120);
+    return { props: { article: null, recommended: [], unavailable: true } };
+  }
 }
 
-export default function ArticlePage({ article, recommended, webAds }) {
-    const [progress, setProgress] = useState(0);
-    const audioRef = useRef(null);
+export default function ArticlePage({ article, recommended, unavailable, missing }) {
+  const [progress, setProgress] = useState(0);
+  const [bannerAd, setBannerAd] = useState(null);
 
-    // ESTADOS PARA ANUNCIOS
-    const [bannerAd, setBannerAd] = useState(null);
-    const [interstitialAd, setInterstitialAd] = useState(null);
-    const [showInterstitial, setShowInterstitial] = useState(false);
-
-    useEffect(() => {
-            if (webAds && webAds.length > 0) {
-            // Permitimos cualquier formato que haya sido marcado con mostrarEnWeb: true
-            const banners = webAds;
-            const interstitials = webAds;
-
-            if (banners.length > 0) {
-                const randomBanner = banners[Math.floor(Math.random() * banners.length)];
-                setBannerAd(randomBanner);
-                fetch('https://api.noticias.lat/api/ads/view', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adId: randomBanner._id, plataforma: 'web' })
-                }).catch(() => {});
-            }
-
-            if (interstitials.length > 0) {
-                const randomInter = interstitials[Math.floor(Math.random() * interstitials.length)];
-                setInterstitialAd(randomInter);
-                setTimeout(() => {
-                    setShowInterstitial(true);
-                    fetch('https://api.noticias.lat/api/ads/view', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ adId: randomInter._id, plataforma: 'web' })
-                    }).catch(() => {});
-                }, 4000); // Muestra el Pop-up a los 4 segundos de lectura
-            }
-        }
-    }, [webAds]);
-
-    // Barra de progreso de lectura
-    useEffect(() => {
-        const updateProgress = () => {
-            const scrollPosition = window.scrollY;
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight;
-            const maxScroll = documentHeight - windowHeight;
-            const currentProgress = maxScroll > 0 ? (scrollPosition / maxScroll) * 100 : 0;
-            setProgress(currentProgress);
-        };
-
-        window.addEventListener('scroll', updateProgress);
-        return () => window.removeEventListener('scroll', updateProgress);
-    }, []);
-
-    if (!article) return null;
-
-    const fechaFormat = new Date(article.fecha).toLocaleDateString('es-ES', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-
-    const imgUrl = (article.imagen && article.imagen.startsWith('http')) ? article.imagen : '/images/placeholder.jpg';
-    
-    // Extracción inteligente del nombre de la fuente
-    const getSourceName = () => {
-        if (article.fuente) return article.fuente;
-        if (article.enlaceOriginal) {
-            try {
-                const url = new URL(article.enlaceOriginal);
-                return url.hostname.replace('www.', '');
-            } catch (e) {
-                return 'Agencia de Noticias';
-            }
-        }
-        return 'Redacción';
+  useEffect(() => {
+    const updateProgress = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0);
     };
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    return () => window.removeEventListener('scroll', updateProgress);
+  }, []);
 
-    // Distribución diversa de recomendaciones
-    const sidebarVisual = recommended.slice(0, 5); // 3 con imagen en el sidebar
-    const sidebarList = recommended.slice(5, 9);   // 4 en lista de texto en el sidebar
-    const bottomGrid = recommended.slice(10, 15);   // 5 para el bento grid inferior
+  useEffect(() => {
+    const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (cb) => setTimeout(cb, 2000);
+    idle(() => {
+      fetch('https://api.noticias.lat/api/ads/active?plataforma=web')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.success && data.ads && data.ads.length) {
+            setBannerAd(data.ads[Math.floor(Math.random() * data.ads.length)]);
+          }
+        })
+        .catch(() => {});
+    });
+  }, []);
 
-    const paragraphs = article.articuloGenerado 
-        ? article.articuloGenerado.split('\n').filter(p => p.trim() !== '') 
-        : [article.descripcion];
-
+  if (missing) {
     return (
-        <Layout>
-            <Head>
-                <title>{`${article.titulo} | Noticias.lat`}</title>
-                <meta name="description" content={article.descripcion} />
-                <meta property="og:title" content={article.titulo} />
-                <meta property="og:description" content={article.descripcion} />
-                <meta property="og:image" content={imgUrl} />
-                <meta property="og:type" content="article" />
-                <meta name="twitter:card" content="summary_large_image" />
-                <link rel="canonical" href={`https://www.noticias.lat/articulo/${article._id}`} />
-            </Head>
-
-            {/* --- POP-UP INTERSTITIAL WEB --- */}
-            {showInterstitial && interstitialAd && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(15, 23, 42, 0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(5px)' }}>
-                    <div style={{ position: 'relative', width: '90%', maxWidth: '400px', background: '#fff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
-                        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
-                            <button onClick={() => setShowInterstitial(false)} style={{ background: '#ef4444', color: '#fff', border: 'none', width: '35px', height: '35px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>X</button>
-                        </div>
-                        <div style={{ padding: '10px 15px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                            Anuncio Patrocinado
-                        </div>
-                        <a href={`https://api.noticias.lat/api/ads/click?adId=${interstitialAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" onClick={() => setShowInterstitial(false)}>
-                            {interstitialAd.mediaUrl.toLowerCase().endsWith('.mp4') ? (
-                                <video src={interstitialAd.mediaUrl} autoPlay loop muted playsInline style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
-                            ) : (
-                                <img src={interstitialAd.mediaUrl} alt={interstitialAd.nombreCampana} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '500px', objectFit: 'cover' }} />
-                            )}
-                        </a>
-                    </div>
-                </div>
-            )}
-
-            <div className="reading-progress-container">
-                <div className="reading-progress-bar" style={{ width: `${progress}%` }}></div>
-            </div>
-
-            <div className="article-layout">
-                {/* COLUMNA IZQUIERDA: CONTENIDO PRINCIPAL */}
-                <article className="article-main-content">
-                    
-                    <div className="article-header" style={{ textAlign: 'left', marginBottom: '2rem' }}>
-                        <Link href={`/?categoria=${article.categoria}`} className="article-category-badge" style={{ marginBottom: '1rem', display: 'inline-block' }}>
-                            {article.categoria}
-                        </Link>
-                        
-                        <h1 className="article-title-main" style={{ fontSize: '2.5rem', lineHeight: '1.2', fontWeight: '900', margin: '0 0 1rem 0' }}>
-                            {article.titulo}
-                        </h1>
-                        
-                        <p style={{ fontSize: '1.2rem', color: '#475569', lineHeight: '1.5', marginBottom: '1.5rem', fontWeight: '500' }}>
-                            {article.descripcion}
-                        </p>
-
-                        <div className="article-meta-row" style={{ justifyContent: 'flex-start', borderTop: 'none', padding: '0 0 1.5rem 0', marginBottom: '0', borderBottom: '1px solid #e2e8f0' }}>
-                            <div className="meta-item">
-                                <i className="far fa-calendar-alt"></i>
-                                <span>{fechaFormat}</span>
-                            </div>
-                            <div className="meta-item">
-                                <i className="fas fa-globe-americas"></i>
-                                <span>{article.pais ? article.pais.toUpperCase() : 'LATAM'}</span>
-                            </div>
-                            <div className="meta-item">
-                                <span className="source-badge">{getSourceName()}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {article.audioUrl && (
-                        <div className="podcast-player-section" style={{ marginBottom: '2.5rem', background: 'linear-gradient(145deg, #1e293b, #0f172a)', borderRadius: '16px', padding: '20px', color: 'white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                                <div style={{ width: '50px', height: '50px', background: 'var(--color-primario)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-                                    <i className="fas fa-headphones-alt"></i>
-                                </div>
-                                <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800' }}>Audionoticia</h3>
-                                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>Escucha el reporte completo</p>
-                                </div>
-                            </div>
-                            <audio 
-                                ref={audioRef}
-                                controls 
-                                src={article.audioUrl} 
-                                style={{ width: '100%', height: '45px', outline: 'none', borderRadius: '8px' }}
-                                preload="none" // Destruye el bloqueo de carga de MBs de audio iniciales
-                            >
-                                Tu navegador no soporta el elemento de audio.
-                            </audio>
-                        </div>
-                    )}
-
-                    <figure className="article-hero-image" style={{ marginBottom: '2.5rem' }}>
-                        <img 
-                            src={imgUrl} 
-                            alt={article.textoImagen || article.titulo} 
-                            loading="lazy" // Lazy Load brutal para salvar red
-                            style={{ width: '100%', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', objectFit: 'cover', maxHeight: '500px' }}
-                            onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder.jpg'; }}
-                        />
-                        {article.textoImagen && (
-                            <figcaption style={{ textAlign: 'center', fontSize: '0.85rem', color: '#64748b', marginTop: '10px', fontStyle: 'italic' }}>
-                                {article.textoImagen}
-                            </figcaption>
-                        )}
-                    </figure>
-
-                    {article.aiSummary && (
-                        <div className="ai-summary-box" style={{ marginBottom: '2.5rem', background: '#f8fafc', borderLeft: '4px solid var(--color-primario)', padding: '1.5rem', borderRadius: '0 8px 8px 0' }}>
-                            <div className="ai-summary-header" style={{ fontWeight: '800', color: 'var(--color-texto-titulos)', marginBottom: '10px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className="fas fa-key" style={{ color: 'var(--color-primario)' }}></i> Puntos clave
-                            </div>
-                            <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: '1.6', color: '#334155' }}>
-                                {article.aiSummary}
-                            </p>
-                        </div>
-                    )}
-
-                    <div className="article-body-content" style={{ fontSize: '1.15rem', lineHeight: '1.8', color: '#334155' }}>
-                        {paragraphs.map((p, index) => {
-                            // Insertar banner exactamente a la mitad de los párrafos
-                            const isMiddle = index === Math.floor(paragraphs.length / 2);
-                            return (
-                                <div key={index}>
-                                    <p style={{ marginBottom: '1.5rem' }}>{p}</p>
-                                    
-                                        {isMiddle && bannerAd && (
-                                        <div style={{ margin: '2.5rem 0', textAlign: 'center', background: '#fff', padding: '15px', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-                                            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>Patrocinado</span>
-                                            <a href={`https://api.noticias.lat/api/ads/click?adId=${bannerAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', width: '100%', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                                {bannerAd.mediaUrl.toLowerCase().endsWith('.mp4') ? (
-                                                    <video src={bannerAd.mediaUrl} autoPlay loop muted playsInline style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
-                                                ) : (
-                                                    <img src={bannerAd.mediaUrl} alt={bannerAd.nombreCampana} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
-                                                )}
-                                            </a>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {article.youtubeId && article.videoProcessingStatus === 'complete' && (
-                        <div className="youtube-video-container" style={{ marginTop: '3rem', borderTop: '2px solid #f1f5f9', paddingTop: '2rem' }}>
-                            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--color-texto-titulos)' }}>
-                                <i className="fab fa-youtube" style={{ color: '#ff0000' }}></i> Cobertura en Video
-                            </h3>
-                            <div className="video-responsive-wrapper" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
-                                <iframe 
-                                    src={`https://www.youtube.com/embed/${article.youtubeId}?autoplay=0&rel=0`} 
-                                    loading="lazy" // No carga el iframe bloqueante hasta hacer scroll
-                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowFullScreen
-                                    title="Video de la noticia"
-                                ></iframe>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="share-section" style={{ marginTop: '3rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem' }}>
-                        <h4 style={{ fontSize: '1rem', fontWeight: '800', marginBottom: '1rem', color: 'var(--color-texto-titulos)' }}>Compartir esta noticia</h4>
-                        <div className="share-buttons-grid" style={{ display: 'flex', gap: '10px' }}>
-                            <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(article.titulo + ' https://www.noticias.lat/articulo/' + article._id)}`} target="_blank" rel="noreferrer" className="share-btn-whatsapp" style={{ padding: '10px 20px', borderRadius: '50px', color: 'white', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className="fab fa-whatsapp"></i> WhatsApp
-                            </a>
-                            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.titulo)}&url=${encodeURIComponent('https://www.noticias.lat/articulo/' + article._id)}`} target="_blank" rel="noreferrer" className="share-btn-twitter" style={{ padding: '10px 20px', borderRadius: '50px', color: 'white', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className="fab fa-twitter"></i> Twitter
-                            </a>
-                            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://www.noticias.lat/articulo/' + article._id)}`} target="_blank" rel="noreferrer" className="share-btn-facebook" style={{ padding: '10px 20px', borderRadius: '50px', color: 'white', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className="fab fa-facebook-f"></i> Facebook
-                            </a>
-                        </div>
-                    </div>
-                </article>
-
-
-
-                {/* COLUMNA DERECHA: STICKY SIDEBAR DIVERSIFICADO */}
-                <aside className="article-sidebar">
-                    <div className="sticky-container" style={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        
-                        {/* WIDGET 1: Visual (Con imágenes) */}
-                        {sidebarVisual.length > 0 && (
-                            <div className="sidebar-widget">
-                                <h3 className="sidebar-title">Destacados</h3>
-                                <div className="sidebar-news-list">
-                                    {sidebarVisual.map(rec => (
-                                        <Link href={`/articulo/${rec._id}`} key={rec._id} className="sidebar-news-item" style={{ textDecoration: 'none' }}>
-                                            <img 
-                                                src={(rec.imagen && rec.imagen.startsWith('http')) ? rec.imagen : '/images/placeholder.jpg'} 
-                                                alt={rec.titulo} 
-                                                loading="lazy"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder.jpg'; }}
-                                            />
-                                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                                <span style={{ fontSize: '0.65rem', color: 'var(--color-primario)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>{rec.categoria}</span>
-                                                <h4>{rec.titulo}</h4>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* WIDGET 2: Lista Rápida (Solo texto) */}
-                        {sidebarList.length > 0 && (
-                            <div className="sidebar-widget" style={{ background: '#f8fafc', border: 'none' }}>
-                                <h3 className="sidebar-title" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Lo Último</h3>
-                                <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-                                    {sidebarList.map(rec => (
-                                        <li key={rec._id} style={{ padding: '12px 0', borderBottom: '1px solid #e2e8f0' }}>
-                                            <Link href={`/articulo/${rec._id}`} style={{ textDecoration: 'none', color: 'var(--color-texto-titulos)', display: 'block' }}>
-                                                <h4 style={{ fontSize: '0.95rem', margin: 0, lineHeight: '1.4', fontWeight: '600' }}>
-                                                    {rec.titulo}
-                                                </h4>
-                                                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
-                                                    <i className="far fa-clock"></i> {new Date(rec.fecha).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
-                                                </span>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                    </div>
-                </aside>
-            </div>
-
-            
-
-            {/* SECCIÓN INFERIOR: BENTO GRID ASIMÉTRICO */}
-            {bottomGrid.length > 0 && (
-                <section className="recommended-section" style={{ background: '#ffffff', padding: '4rem 15px', marginTop: '2rem', borderTop: '1px solid #e2e8f0' }}>
-                    <div className="container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                        <h2 className="recommended-title" style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '2rem', color: 'var(--color-texto-titulos)' }}>Te podría interesar</h2>
-                        
-                        <div className="bottom-bento-grid">
-                            {bottomGrid.map((rec, index) => {
-                                // El primer artículo de la grilla lo hacemos más grande (ocupa 2 columnas si hay espacio)
-                                const isFeatured = index === 0;
-                                
-                                return (
-                                    <div className={`bento-card ${isFeatured ? 'featured-bento' : ''}`} key={rec._id}>
-                                        <Link href={`/articulo/${rec._id}`} className="bento-image-wrapper">
-                                            <img 
-                                                src={(rec.imagen && rec.imagen.startsWith('http')) ? rec.imagen : '/images/placeholder.jpg'} 
-                                                alt={rec.titulo} 
-                                                loading="lazy"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder.jpg'; }}
-                                            />
-                                            <div className="bento-category-tag">{rec.categoria}</div>
-                                        </Link>
-                                        <div className="bento-content">
-                                            <h3>
-                                                <Link href={`/articulo/${rec._id}`}>
-                                                    {rec.titulo}
-                                                </Link>
-                                            </h3>
-                                            <p>{rec.descripcion}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            <style jsx global>{`
-                .article-layout {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: 2rem;
-                    max-width: 1200px;
-                    margin: 2rem auto;
-                    padding: 0 15px;
-                }
-                @media (min-width: 1024px) {
-                    .article-layout {
-                        grid-template-columns: 1fr 350px;
-                        gap: 4rem;
-                        padding: 0;
-                    }
-                }
-                
-                /* Estilos Sidebar */
-                .sidebar-news-item h4 {
-                    font-size: 0.95rem;
-                    line-height: 1.3;
-                    margin: 0;
-                    color: var(--color-texto-titulos);
-                    transition: color 0.2s;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 3;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                }
-                .sidebar-news-item:hover h4 {
-                    color: var(--color-primario);
-                }
-                
-                /* Audio Player Nativo Modificado */
-                audio::-webkit-media-controls-panel {
-                    background-color: #f1f5f9;
-                }
-                audio::-webkit-media-controls-play-button {
-                    background-color: var(--color-primario);
-                    border-radius: 50%;
-                }
-
-                /* Bento Grid Inferior */
-                .bottom-bento-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                    gap: 20px;
-                }
-                .bento-card {
-                    background: white;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                    transition: transform 0.2s, box-shadow 0.2s;
-                }
-                .bento-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-                }
-                .bento-image-wrapper {
-                    position: relative;
-                    height: 180px;
-                    display: block;
-                }
-                .bento-image-wrapper img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                }
-                .bento-category-tag {
-                    position: absolute;
-                    top: 12px;
-                    left: 12px;
-                    background: var(--color-primario);
-                    color: white;
-                    padding: 4px 10px;
-                    font-size: 0.7rem;
-                    font-weight: bold;
-                    text-transform: uppercase;
-                    border-radius: 4px;
-                }
-                .bento-content {
-                    padding: 15px;
-                    display: flex;
-                    flex-direction: column;
-                    flex: 1;
-                }
-                .bento-content h3 {
-                    font-size: 1.1rem;
-                    margin: 0 0 10px 0;
-                    line-height: 1.3;
-                }
-                .bento-content h3 a {
-                    color: var(--color-texto-titulos);
-                    text-decoration: none;
-                }
-                .bento-content h3 a:hover {
-                    color: var(--color-primario);
-                }
-                .bento-content p {
-                    font-size: 0.9rem;
-                    color: #64748b;
-                    margin: 0;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 3;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                    flex: 1;
-                }
-
-                @media (min-width: 768px) {
-                    .featured-bento {
-                        grid-column: span 2;
-                        flex-direction: row;
-                    }
-                    .featured-bento .bento-image-wrapper {
-                        width: 50%;
-                        height: auto;
-                    }
-                    .featured-bento .bento-content {
-                        width: 50%;
-                        padding: 25px;
-                        justify-content: center;
-                    }
-                    .featured-bento .bento-content h3 {
-                        font-size: 1.5rem;
-                        margin-bottom: 15px;
-                    }
-                    .featured-bento .bento-content p {
-                        font-size: 1rem;
-                        -webkit-line-clamp: 4;
-                    }
-                }
-            `}</style>
-            
-        {/* AQUÍ PEGAS EL BANNER, justo antes de que cierre el Layout */}
-            <AppBanner />
-        
-        </Layout>
+      <Layout noindex>
+        <Head>
+          <title>Noticia no encontrada | {SITE_NAME}</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
+        <div className="container static-page-container" style={{ textAlign: 'center' }}>
+          <h1>Esta noticia ya no existe</h1>
+          <p>La URL no está en nuestro archivo. Google no debe volver a rastrearla.</p>
+          <Link href="/" className="play-btn">Volver a la portada</Link>
+        </div>
+      </Layout>
     );
+  }
+
+  if (unavailable || !article) {
+    return (
+      <Layout noindex>
+        <Head>
+          <title>Contenido temporalmente no disponible | {SITE_NAME}</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+        <div className="container static-page-container" style={{ textAlign: 'center' }}>
+          <h1>Estamos recuperando esta nota</h1>
+          <p>El artículo existe, pero el servidor tardó en responder. Prueba de nuevo en un momento.</p>
+          <Link href="/" className="play-btn">Volver a la portada</Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  const fechaFormat = new Date(article.fecha).toLocaleDateString('es-ES', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+  const imgUrl = article.imagen && article.imagen.startsWith('http') ? article.imagen : '/images/placeholder.jpg';
+  const canonical = `${SITE_URL}/articulo/${article._id}`;
+  const paragraphs = article.articuloGenerado
+    ? article.articuloGenerado.split('\n').filter((p) => p.trim() !== '')
+    : [article.descripcion];
+  const sidebarVisual = recommended.slice(0, 5);
+  const sidebarList = recommended.slice(5, 9);
+  const bottomGrid = recommended.slice(0, 6);
+
+  return (
+    <Layout>
+      <Head>
+        <title>{`${article.titulo} | ${SITE_NAME}`}</title>
+        <meta name="description" content={article.descripcion} />
+        <link rel="canonical" href={canonical} />
+        <meta property="og:title" content={article.titulo} />
+        <meta property="og:description" content={article.descripcion} />
+        <meta property="og:image" content={imgUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonical} />
+        <meta name="author" content="Redacción Noticias.lat" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(newsArticleSchema(article)) }} />
+      </Head>
+
+      <div className="reading-progress-container">
+        <div className="reading-progress-bar" style={{ width: `${progress}%` }}></div>
+      </div>
+
+      <div className="article-layout">
+        <article className="article-main-content">
+          <div className="article-header" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+            <Link href={`/?categoria=${article.categoria}`} className="article-category-badge">
+              {article.categoria}
+            </Link>
+            <h1 className="article-title-main">{article.titulo}</h1>
+            <p className="article-dek">{article.descripcion}</p>
+            <div className="article-meta-row" style={{ justifyContent: 'flex-start', borderTop: 'none', padding: '0 0 1.2rem 0', marginBottom: 0 }}>
+              <div className="meta-item"><i className="far fa-calendar-alt"></i><span>{fechaFormat}</span></div>
+              <div className="meta-item"><i className="fas fa-globe-americas"></i><span>{article.pais ? article.pais.toUpperCase() : 'LATAM'}</span></div>
+              <div className="meta-item"><span className="source-badge">Redacción Noticias.lat</span></div>
+            </div>
+          </div>
+
+          {article.audioUrl && (
+            <div className="podcast-player-section article-audio">
+              <div className="audio-head">
+                <i className="fas fa-headphones-alt"></i>
+                <div>
+                  <h3>Audionoticia</h3>
+                  <p>Escucha el reporte completo</p>
+                </div>
+              </div>
+              <audio controls src={article.audioUrl} preload="none">Tu navegador no soporta audio.</audio>
+            </div>
+          )}
+
+          <figure className="article-hero-image">
+            <img
+              src={imgUrl}
+              alt={article.textoImagen || article.titulo}
+              fetchPriority="high"
+              decoding="async"
+              width="800"
+              height="450"
+              onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder.jpg'; }}
+            />
+            {article.textoImagen && <figcaption>{article.textoImagen}</figcaption>}
+          </figure>
+
+          {article.aiSummary && (
+            <div className="ai-summary-box">
+              <div className="ai-summary-header"><i className="fas fa-key"></i> Puntos clave</div>
+              <p>{article.aiSummary}</p>
+            </div>
+          )}
+
+          <div className="article-body-content">
+            {paragraphs.map((p, index) => {
+              const isMiddle = index === Math.floor(paragraphs.length / 2);
+              return (
+                <div key={index}>
+                  <p>{p}</p>
+                  {isMiddle && bannerAd && bannerAd.mediaUrl && (
+                    <div className="web-ad-box">
+                      <span>Patrocinado</span>
+                      <a href={`https://api.noticias.lat/api/ads/click?adId=${bannerAd._id}&plataforma=web`} target="_blank" rel="noopener noreferrer">
+                        {String(bannerAd.mediaUrl).toLowerCase().endsWith('.mp4') ? (
+                          <video src={bannerAd.mediaUrl} muted playsInline preload="none" controls style={{ width: '100%', maxHeight: '220px' }} />
+                        ) : (
+                          <img src={bannerAd.mediaUrl} alt="" loading="lazy" style={{ width: '100%', maxHeight: '220px', objectFit: 'cover' }} />
+                        )}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="editorial-note">
+            <p>
+              Esta nota fue producida por la redacción de Noticias.lat: verificamos la información en fuentes
+              públicas y la reescribimos con nuestro criterio editorial. No republicamos textos de terceros.
+            </p>
+          </div>
+
+          <div className="share-section">
+            <h4>Compartir esta noticia</h4>
+            <div className="share-buttons-grid">
+              <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${article.titulo} ${canonical}`)}`} target="_blank" rel="noreferrer" className="share-btn-whatsapp share-chip"><i className="fab fa-whatsapp"></i> WhatsApp</a>
+              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.titulo)}&url=${encodeURIComponent(canonical)}`} target="_blank" rel="noreferrer" className="share-btn-twitter share-chip"><i className="fab fa-twitter"></i> X</a>
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonical)}`} target="_blank" rel="noreferrer" className="share-btn-facebook share-chip"><i className="fab fa-facebook-f"></i> Facebook</a>
+            </div>
+          </div>
+        </article>
+
+        <aside className="article-sidebar">
+          <div className="sticky-container" style={{ position: 'sticky', top: '90px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {sidebarVisual.length > 0 && (
+              <div className="sidebar-widget">
+                <h3 className="sidebar-title">Destacados</h3>
+                <div className="sidebar-news-list">
+                  {sidebarVisual.map((rec) => (
+                    <Link href={`/articulo/${rec._id}`} key={rec._id} className="sidebar-news-item">
+                      <img src={(rec.imagen && rec.imagen.startsWith('http')) ? rec.imagen : '/images/placeholder.jpg'} alt="" loading="lazy" onError={(e) => { e.target.src = '/images/placeholder.jpg'; }} />
+                      <div>
+                        <span className="kicker">{rec.categoria}</span>
+                        <h4>{rec.titulo}</h4>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {sidebarList.length > 0 && (
+              <div className="sidebar-widget">
+                <h3 className="sidebar-title">Lo último</h3>
+                <ul className="plain-news">
+                  {sidebarList.map((rec) => (
+                    <li key={rec._id}>
+                      <Link href={`/articulo/${rec._id}`}>{rec.titulo}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {bottomGrid.length > 0 && (
+        <section className="recommended-section">
+          <div className="container">
+            <h2 className="recommended-title">Te podría interesar</h2>
+            <div className="bottom-bento-grid">
+              {bottomGrid.map((rec) => (
+                <article className="bento-card" key={rec._id}>
+                  <Link href={`/articulo/${rec._id}`} className="bento-image-wrapper">
+                    <img src={(rec.imagen && rec.imagen.startsWith('http')) ? rec.imagen : '/images/placeholder.jpg'} alt="" loading="lazy" />
+                    <div className="bento-category-tag">{rec.categoria}</div>
+                  </Link>
+                  <div className="bento-content">
+                    <h3><Link href={`/articulo/${rec._id}`}>{rec.titulo}</Link></h3>
+                    <p>{rec.descripcion}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <AppBanner />
+    </Layout>
+  );
 }

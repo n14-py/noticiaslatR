@@ -1,61 +1,41 @@
 import Head from 'next/head';
-import Script from 'next/script'; // Importamos el componente optimizado
+import Script from 'next/script';
 import Header from './Header';
 import Footer from './Footer';
+import { ADSENSE_CLIENT, GA_ID, SITE_NAME } from '../lib/site';
+import { jsonLd, organizationSchema } from '../lib/seo';
 
-export default function Layout({ children }) {
+export default function Layout({ children, noindex = false }) {
   return (
     <>
       <Head>
         <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        
-        {/* Título y descripción por defecto */}
-        <title>Noticias.lat - El portal de noticias de Latinoamérica</title>
-        <meta name="description" content="Tu portal de noticias actualizado con la última información de la red LFAF Tech. Cobertura de todos los países de Latinoamérica." />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content="Noticias.lat - Lo Último de Latinoamérica" />
-        <meta property="og:description" content="Tu fuente de noticias actualizada con cobertura detallada de Argentina, México, Colombia, Chile, Perú y toda la región." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.noticias.lat" />
-        <meta property="og:image" content="https://www.noticias.lat/images/placeholder.jpg" />
-        <meta property="og:site_name" content="Noticias.lat" />
-        
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta name="robots" content={noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:locale" content="es_LA" />
+        <meta name="twitter:card" content="summary_large_image" />
         <link rel="icon" href="/favicon.png" type="image/png" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(organizationSchema()) }} />
       </Head>
 
-      {/* --- SCRIPTS (Fuera de Head, usando Script) --- */}
-
-      {/* 1. Google AdSense */}
-      <Script 
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5461370198299696"
+      <Script
+        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
         crossOrigin="anonymous"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-
-      {/* 2. Google Analytics (GA4) */}
-      <Script 
-        src="https://www.googletagmanager.com/gtag/js?id=G-J80VTC4S5M"
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="lazyOnload" />
+      <Script id="google-analytics" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', 'G-J80VTC4S5M');
+          gtag('config', '${GA_ID}', { anonymize_ip: true });
         `}
       </Script>
 
-
-
       <Header />
-
-      <main>
-        {children}
-      </main>
-
+      <main>{children}</main>
       <Footer />
     </>
   );

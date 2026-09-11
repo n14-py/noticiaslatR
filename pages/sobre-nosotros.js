@@ -1,129 +1,113 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../components/Layout';
+import { PLAY_STORE_URL, SITE_EMAIL, SITE_NAME, SITE_URL } from '../lib/site';
+
+export const runtime = 'experimental-edge';
 
 export default function SobreNosotros() {
-    return (
-        <Layout>
-            <Head>
-                <title>Sobre Nosotros - Noticias.lat | AudioNoticias IA</title>
-                <meta name="description" content="Conoce a Noticias.lat, la primera plataforma de noticias narradas por inteligencia artificial en tiempo real." />
-            </Head>
+  return (
+    <Layout>
+      <Head>
+        <title>Quiénes somos — Redacción de {SITE_NAME}</title>
+        <meta name="description" content="Noticias.lat es un medio digital de Latinoamérica. Verificamos la fuente, reescribimos cada nota y la publicamos en la web y en la app de Android." />
+        <link rel="canonical" href={`${SITE_URL}/sobre-nosotros`} />
+      </Head>
 
-            {/* HERO SECTION (Encabezado Visual) */}
-            <div style={{ 
-                background: 'linear-gradient(135deg, var(--color-tech-bg) 0%, #1e3a8a 100%)', 
-                color: 'white', 
-                padding: '5rem 1rem', 
-                textAlign: 'center',
-                marginBottom: '3rem'
-            }}>
-                <div className="container">
-                    <h1 style={{ fontSize: '2.8rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '-1px' }}>
-                        El Futuro de las Noticias es <span style={{ color: '#60a5fa' }}>Audible</span>
-                    </h1>
-                    <p style={{ fontSize: '1.2rem', maxWidth: '700px', margin: '0 auto', opacity: '0.9' }}>
-                        Combinamos periodismo digital con inteligencia artificial avanzada para llevarte la actualidad en tiempo real, en texto y audio.
-                    </p>
-                </div>
-            </div>
+      <div className="static-hero">
+        <div className="container">
+          <h1>Quiénes somos</h1>
+          <p>Un medio digital de Latinoamérica. Las más de 50.000 noticias de noticias.lat son producción propia.</p>
+        </div>
+      </div>
 
-            <div className="container" style={{ maxWidth: '900px', marginBottom: '4rem' }}>
-                
-                {/* 1. QUIÉNES SOMOS */}
-                <section style={{ marginBottom: '4rem' }}>
-                    <h2 style={{ 
-                        fontSize: '2rem', 
-                        color: 'var(--color-texto-titulos)', 
-                        borderLeft: '5px solid var(--color-primario)', 
-                        paddingLeft: '15px',
-                        marginBottom: '1.5rem'
-                    }}>
-                        Quiénes Somos
-                    </h2>
-                    <div style={{ fontSize: '1.1rem', lineHeight: '1.8', color: 'var(--color-texto-cuerpo)' }}>
-                        <p style={{ marginBottom: '1rem' }}>
-                            <strong>Noticias.lat</strong> nació con una misión clara: adaptar el consumo de información al ritmo de vida moderno. En un mundo donde el tiempo es escaso, creemos que mantenerse informado no debería ser una tarea difícil.
-                        </p>
-                        <p>
-                            Somos pioneros en la implementación de tecnologías de <strong>Generación de Voz Neuronal (Neural TTS)</strong> y automatización de video. Esto nos permite transformar reportes escritos en experiencias audiovisuales ricas (AudioNoticias) en cuestión de minutos, garantizando que la información llegue a ti fresca y accesible, ya sea que estés leyendo en tu oficina o escuchando mientras conduces.
-                        </p>
-                    </div>
-                </section>
+      <div className="container static-prose">
+        <section>
+          <h2>La redacción</h2>
+          <p>
+            <strong>Noticias.lat</strong> es operado por LFAF Tech. Nacimos para informar a lectores de habla
+            hispana en Argentina, México, Colombia, Chile, Perú, Centroamérica, el Caribe y el resto de la región,
+            con un criterio editorial propio: rapidez, claridad y atribución.
+          </p>
+          <p>
+            No copiamos y pegamos agencias. El proceso es siempre el mismo: localizamos un hecho de interés
+            público, <strong>verificamos la fuente</strong>, contrastamos datos esenciales y
+            <strong> reescribimos la noticia con el toque de Noticias.lat</strong> —contexto, síntesis y un
+            texto original publicado en este dominio.
+          </p>
+        </section>
 
-                {/* 2. NUESTRA TECNOLOGÍA (Credibilidad) */}
-                <section style={{ marginBottom: '4rem' }}>
-                    <h2 style={{ fontSize: '2rem', color: 'var(--color-texto-titulos)', marginBottom: '2rem' }}>
-                        Innovación Tecnológica
-                    </h2>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
-                        {/* Card 1 */}
-                        <div style={{ 
-                            background: 'white', padding: '2rem', borderRadius: '12px', 
-                            boxShadow: 'var(--sombra-suave)', border: '1px solid var(--borde-sutil)'
-                        }}>
-                            <i className="fas fa-robot" style={{ fontSize: '2rem', color: 'var(--color-primario)', marginBottom: '1rem' }}></i>
-                            <h3 style={{ marginBottom: '0.5rem' }}>Curación por IA</h3>
-                            <p style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                                Nuestros algoritmos monitorean fuentes globales 24/7 para identificar los eventos más relevantes al instante.
-                            </p>
-                        </div>
+        <section>
+          <h2>Cómo producimos cada nota</h2>
+          <ol>
+            <li>Monitoreo de hechos de interés público en toda Latinoamérica y el mundo.</li>
+            <li>Verificación de la fuente original y de datos comprobables (fechas, cifras, declaraciones).</li>
+            <li>Redacción propia: el artículo que lees en noticias.lat no es el texto de terceros.</li>
+            <li>Edición de titular, bajada, categoría y país para que el lector ubique la noticia.</li>
+            <li>Cuando aporta valor, producimos audionoticia y video para la web y para la app.</li>
+          </ol>
+          <p>
+            Las más de <strong>50.000 noticias</strong> publicadas en noticias.lat siguen este flujo. El archivo
+            es nuestro: cada URL de artículo corresponde a una pieza elaborada para este medio.
+          </p>
+        </section>
 
-                        {/* Card 2 */}
-                        <div style={{ 
-                            background: 'white', padding: '2rem', borderRadius: '12px', 
-                            boxShadow: 'var(--sombra-suave)', border: '1px solid var(--borde-sutil)'
-                        }}>
-                            <i className="fas fa-microphone-alt" style={{ fontSize: '2rem', color: 'var(--color-primario)', marginBottom: '1rem' }}></i>
-                            <h3 style={{ marginBottom: '0.5rem' }}>Narración Natural</h3>
-                            <p style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                                Utilizamos modelos de voz de última generación que suenan humanos, cálidos y profesionales.
-                            </p>
-                        </div>
-                    </div>
-                </section>
+        <section>
+          <h2>Tecnología al servicio del periodismo</h2>
+          <p>
+            Usamos herramientas de voz y video para que la misma nota pueda leerse, escucharse o verse. Eso no
+            reemplaza la verificación ni la reescritura. La responsabilidad editorial de cada publicación es de
+            Noticias.lat.
+          </p>
+          <div className="static-cards">
+            <article className="static-card">
+              <h3>Texto original</h3>
+              <p>Cada artículo se redacta para este sitio. No republicamos cables completos.</p>
+            </article>
+            <article className="static-card">
+              <h3>Audio</h3>
+              <p>Las audionoticias permiten informar sin mirar la pantalla, desde la web o la app.</p>
+            </article>
+            <article className="static-card">
+              <h3>Video</h3>
+              <p>Cuando hay cobertura audiovisual, la incrustamos en la misma nota verificada.</p>
+            </article>
+          </div>
+        </section>
 
-                {/* 3. CONTACTO Y PRENSA (Lo que pediste) */}
-                <section style={{ 
-                    background: '#f8fafc', 
-                    padding: '3rem', 
-                    borderRadius: '16px', 
-                    border: '1px solid #e2e8f0',
-                    textAlign: 'center'
-                }}>
-                    <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>Publicidad y Contacto</h2>
-                    <p style={{ marginBottom: '2rem', color: '#475569' }}>
-                        ¿Quieres anunciar tu marca en nuestras AudioNoticias o tienes una nota de prensa para compartir?
-                        Llegamos a miles de usuarios activos interesados en tecnología, política y actualidad.
-                    </p>
-                    
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Link href="/contacto" style={{ 
-                            background: 'var(--color-primario)', 
-                            color: 'white', 
-                            padding: '12px 30px', 
-                            borderRadius: '50px', 
-                            fontWeight: '700',
-                            boxShadow: '0 4px 10px rgba(0, 102, 204, 0.3)'
-                        }}>
-                            Contactar Soporte
-                        </Link>
-                        
-                        <a href="mailto:contactonoticiaslat@gmail.com" style={{ 
-                            background: 'white', 
-                            color: 'var(--color-texto-titulos)', 
-                            border: '1px solid #cbd5e1',
-                            padding: '12px 30px', 
-                            borderRadius: '50px', 
-                            fontWeight: '700'
-                        }}>
-                            contactonoticiaslat@gmail.com
-                        </a>
-                    </div>
-                </section>
+        <section>
+          <h2>La app oficial</h2>
+          <p>
+            Publicamos también en Android. La app <strong>Noticias LAT</strong> está en Google Play
+            (<code>com.noticiaslat.app</code>) y replica el trabajo de la redacción: portada, categorías,
+            alertas y audionoticias. Más detalle en la página <Link href="/app">App Android</Link>.
+          </p>
+          <p>
+            <a className="play-btn" href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">
+              Descargar en Google Play
+            </a>
+          </p>
+        </section>
 
-            </div>
-        </Layout>
-    );
+        <section>
+          <h2>Independencia, correcciones y publicidad</h2>
+          <p>
+            Las opiniones de fuentes citadas no son necesariamente las de este medio. Si detectas un error de
+            hecho, escríbenos a <a href={`mailto:${SITE_EMAIL}`}>{SITE_EMAIL}</a>: corregimos con transparencia.
+          </p>
+          <p>
+            El sitio se financia con publicidad, incluida Google AdSense, y con anuncios propios claramente
+            etiquetados. La publicidad no decide qué se publica ni cómo se titula una noticia.
+          </p>
+        </section>
+
+        <section>
+          <h2>Contacto de prensa y comercial</h2>
+          <p>
+            Para notas de prensa, derechos, correcciones o publicidad: <Link href="/contacto">página de contacto</Link> o {SITE_EMAIL}.
+          </p>
+        </section>
+      </div>
+    </Layout>
+  );
 }

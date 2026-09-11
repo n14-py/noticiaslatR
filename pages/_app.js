@@ -1,44 +1,18 @@
-import { useRef } from 'react';
-// Quitamos la importación de Head porque ya no la usamos aquí
-// import Head from 'next/head'; 
-
+import { useEffect } from 'react';
 import '../styles/style.css';
-import { PlayerProvider, usePlayer } from '../context/PlayerContext';
-import PlayerBar from '../components/PlayerBar';
 
 function MyApp({ Component, pageProps }) {
-  const audioRef = useRef(null);
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => registration.unregister());
+    });
+    if (typeof caches !== 'undefined') {
+      caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+    }
+  }, []);
 
-  return (
-    <PlayerProvider>
-      {/* Ya no ponemos el <Head> aquí, lo moveremos a _document.js */}
-      
-      <Component {...pageProps} />
-      
-      <PlayerBar />
-      
-      <AudioInjector setAudioElement={(el) => audioRef.current = el} />
-    </PlayerProvider>
-  );
-}
-
-function AudioInjector({ setAudioElement }) {
-    const { setAudioElement: setAudioInContext } = usePlayer();
-    
-    const audioRef = (node) => {
-        if (node) {
-            setAudioElement(node);
-            setAudioInContext(node);
-        }
-    };
-    
-    return (
-        <audio 
-          ref={audioRef} 
-          id="audio-player" 
-          preload="none"
-        />
-    );
+  return <Component {...pageProps} />;
 }
 
 export default MyApp;

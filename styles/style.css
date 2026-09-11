@@ -135,6 +135,7 @@ img { max-width: 100%; display: block; height: auto; }
     z-index: 1000;
     border-bottom: 1px solid rgba(226, 232, 240, 0.8);
     transition: all 0.3s ease;
+    overflow: visible;
 }
 
 .glass-effect {
@@ -149,6 +150,7 @@ img { max-width: 100%; display: block; height: auto; }
     display: flex;
     justify-content: space-between;
     align-items: center;
+    overflow: visible;
 }
 
 /* -- Branding / Logo -- */
@@ -257,9 +259,10 @@ img { max-width: 100%; display: block; height: auto; }
 .mega-menu {
     position: absolute;
     top: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    width: 700px;
+    left: auto;
+    right: 0;
+    transform: translateY(20px);
+    width: min(700px, calc(100vw - 32px));
     background: var(--color-tarjeta);
     border-radius: var(--radio-card);
     padding: 2.5rem;
@@ -275,15 +278,16 @@ img { max-width: 100%; display: block; height: auto; }
 .dropdown-wrapper:hover .mega-menu {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
 }
 
 .mega-menu::before {
     content: '';
     position: absolute;
     top: -6px;
-    left: 50%;
-    transform: translateX(-50%) rotate(45deg);
+    left: auto;
+    right: 28px;
+    transform: rotate(45deg);
     width: 12px;
     height: 12px;
     background: var(--color-tarjeta);
@@ -1574,10 +1578,28 @@ img { max-width: 100%; display: block; height: auto; }
     background: linear-gradient(145deg, #f8fafc 0%, #eff6ff 100%);
     border: 1px solid #bfdbfe;
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 1.2rem 1.5rem;
     margin-bottom: 2.5rem;
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.05);
 }
+
+.summary-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-primario);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.summary-toggle:hover { filter: brightness(1.06); }
+
+.summary-panel { margin-top: 1rem; }
 
 .ai-summary-header {
     display: flex;

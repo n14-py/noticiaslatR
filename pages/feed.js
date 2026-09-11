@@ -3,55 +3,47 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Script from 'next/script';
 import { useRouter } from 'next/router';
+import { fetchJson, normalizeArticles, setCacheHeaders, setUnavailable } from '../lib/api';
+import { SITE_URL } from '../lib/site';
 
-// Configuración Edge
 export const runtime = 'experimental-edge';
 
-const API_URL = 'https://api.noticias.lat';
-const SITIO = 'noticias.lat';
-
-// --- 1. CARGA DE DATOS (Caché 24h) ---
 export async function getServerSideProps(context) {
-    context.res.setHeader(
-        'Cache-Control',
-        'public, s-maxage=86400, stale-while-revalidate=3600'
-    );
-
     const { start_id } = context.query;
-    const url = `${API_URL}/api/articles/feed?sitio=${SITIO}&limit=15`;
-
     try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('API Error');
-        const articles = await res.json();
+        const data = await fetchJson('https://api.noticias.lat/api/articles/feed?sitio=noticias.lat&limit=12', { timeout: 7000 });
+        const articles = normalizeArticles(data).map((article) => ({
+            _id: article._id,
+            titulo: article.titulo || '',
+            descripcion: article.descripcion || '',
+            categoria: article.categoria || '',
+            youtubeId: article.youtubeId || null,
+            articuloGenerado: typeof article.articuloGenerado === 'string' ? article.articuloGenerado.slice(0, 500) : '',
+        }));
 
-        if (!Array.isArray(articles) || articles.length === 0) {
-             return { props: { articles: [] } };
+        if (articles.length === 0) {
+            setCacheHeaders(context.res, 120);
+            return { props: { articles: [] } };
         }
 
         let sortedArticles = articles;
         if (start_id) {
-            const index = articles.findIndex(a => a._id === start_id);
+            const index = articles.findIndex((a) => a._id === start_id);
             if (index !== -1) {
                 const selected = articles[index];
-                const rest = articles.filter(a => a._id !== start_id);
-                sortedArticles = [selected, ...rest];
+                sortedArticles = [selected, ...articles.filter((a) => a._id !== start_id)];
             }
         }
 
-        return {
-            props: {
-                articles: sortedArticles,
-                initialMeta: sortedArticles[0] || null
-            }
-        };
+        setCacheHeaders(context.res, 600);
+        return { props: { articles: sortedArticles } };
     } catch (error) {
-        console.error("Feed Error:", error);
-        return { props: { articles: [], error: "Error de conexión" } };
+        setUnavailable(context.res, 90);
+        return { props: { articles: [], error: 'Error de conexión' } };
     }
 }
 
-export default function FeedPage({ articles, initialMeta, error }) {
+export default function FeedPage({ articles, error }) {
     const router = useRouter();
     
     // --- ESTADOS ---
@@ -232,7 +224,7 @@ export default function FeedPage({ articles, initialMeta, error }) {
     const shareToWhatsApp = () => { if (shareData) { window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`Mira este video: ${shareData.title} ${shareData.url}`)}`, '_blank'); setShowShareModal(false); } };
     const copyToClipboard = async () => { if (shareData) { try { await navigator.clipboard.writeText(shareData.url); alert('Enlace copiado ✅'); } catch (err) { prompt("Copia el enlace:", shareData.url); } setShowShareModal(false); } };
 
-    if (!articles || articles.length === 0) return (<div className="feed-error"><p style={{marginBottom: '20px'}}>Cargando noticias...</p><Link href="/" className="read-more-btn">Ir al Inicio</Link><style jsx>{`.feed-error { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #aaa; background: #111; } .read-more-btn { color: white; text-decoration: underline; }`}</style></div>);
+    if (!articles || articles.length === 0) return (<div className="feed-error"><p style={{marginBottom: '20px'}}>{error || 'Cargando noticias...'}</p><Link href="/" className="read-more-btn">Ir al Inicio</Link><style jsx>{`.feed-error { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #aaa; background: #111; } .read-more-btn { color: white; text-decoration: underline; }`}</style></div>);
 
     return (
         <>
@@ -240,7 +232,8 @@ export default function FeedPage({ articles, initialMeta, error }) {
                 <title>{pageTitle}</title>
                 <meta name="theme-color" content="#000000" />
                 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-                <link rel="canonical" href={`https://www.noticias.lat/feed?start_id=${currentArticle._id}`} />
+                <link rel="canonical" href={`${SITE_URL}/feed`} />
+                <meta name="robots" content={router.query.start_id ? 'noindex,follow' : 'index,follow'} />
             </Head>
             <Script src="https://www.youtube.com/iframe_api" strategy="afterInteractive" />
 

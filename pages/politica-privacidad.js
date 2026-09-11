@@ -1,54 +1,126 @@
-import Layout from '../components/Layout';
 import Head from 'next/head';
-import Link from 'next/link'; // Importamos Link
+import Link from 'next/link';
+import Layout from '../components/Layout';
+import { SITE_EMAIL, SITE_NAME, SITE_URL } from '../lib/site';
+
+export const runtime = 'experimental-edge';
 
 export default function PoliticaPrivacidad() {
   return (
     <Layout>
       <Head>
-        {/* SEO tags para esta página */}
-        <title>Política de Privacidad - Noticias.lat</title>
-        <meta name="description" content="Esta página le informa sobre nuestras políticas con respecto a la recopilación, uso y divulgación de datos personales cuando utiliza nuestro Servicio." />
-        
-        {/* Metatags OG específicas */}
-        <meta property="og:title" content="Política de Privacidad - Noticias.lat" />
-        <meta property="og:url" content="https://www.noticias.lat/politica-privacidad" />
-        <meta property="og:description" content="Esta página le informa sobre nuestras políticas con respecto a la recopilación, uso y divulgación de datos personales cuando utiliza nuestro Servicio." />
-
-        {/* Etiqueta Canónica */}
-        <link rel="canonical" href="https://www.noticias.lat/politica-privacidad" />
+        <title>Política de Privacidad | {SITE_NAME}</title>
+        <meta name="description" content="Cómo Noticias.lat y la app Noticias LAT tratan cookies, analítica, publicidad y datos de contacto." />
+        <link rel="canonical" href={`${SITE_URL}/politica-privacidad`} />
       </Head>
-
       <div className="container">
-        {/* Contenido de tu archivo politica-privacidad.html original */}
-        <div className="static-page-container">
-            <h1>Política de Privacidad</h1>
-            <p>Fecha de última actualización: 31 de Octubre de 2025</p>
-            <p>Noticias.lat ("nosotros", "nuestro") opera el sitio web Noticias.lat (el "Servicio"). Esta página le informa sobre nuestras políticas con respecto a la recopilación, uso y divulgación de datos personales cuando utiliza nuestro Servicio.</p>
+        <div className="static-page-container static-prose">
+          <h1>Política de Privacidad</h1>
+          <p>Fecha de última actualización: 11 de septiembre de 2026</p>
+          <p>
+            Esta política describe cómo Noticias.lat (el sitio https://www.noticias.lat) y la aplicación
+            Android Noticias LAT (“el Servicio”), operados por LFAF Tech, tratan la información. Está
+            pensada para cumplir buenas prácticas de transparencia exigidas por anunciantes, incluida Google AdSense.
+          </p>
 
-            <h2>Recopilación y Uso de Información</h2>
-            <p>No recopilamos información de identificación personal de nuestros visitantes. La información que recopilamos es puramente anónima y se utiliza para análisis de tráfico.</p>
+          <h2>1. Responsable</h2>
+          <p>
+            Responsable: LFAF Tech — Noticias.lat.<br />
+            Contacto: <a href={`mailto:${SITE_EMAIL}`}>{SITE_EMAIL}</a> · <Link href="/contacto">Formulario de contacto</Link>
+          </p>
 
-            <h2>Datos de Registro (Log Data)</h2>
-            <p>Al igual que muchos operadores de sitios, recopilamos información que su navegador envía cada vez que visita nuestro Servicio ("Datos de Registro"). Estos Datos de Registro pueden incluir información como la dirección del Protocolo de Internet ("IP") de su computadora, el tipo de navegador, la versión del navegador, las páginas de nuestro Servicio que visita, la hora y la fecha de su visita, el tiempo dedicado a esas páginas y otras estadísticas.</p>
+          <h2>2. Qué datos tratamos</h2>
+          <p>No exigimos registro para leer las noticias. Podemos tratar:</p>
+          <ul>
+            <li>Datos técnicos de navegación: IP, tipo de dispositivo y navegador, páginas vistas, fecha y hora (registros de servidor y CDN).</li>
+            <li>Datos que nos envías voluntariamente por correo o formulario (nombre, email y mensaje).</li>
+            <li>Identificadores de publicidad y analítica mediante cookies o identificadores móviles, si aceptas o no bloqueas esas tecnologías.</li>
+            <li>En la app: token de notificaciones y datos de uso básicos que Android o Firebase puedan recoger según la configuración del dispositivo.</li>
+          </ul>
+          <p>No vendemos bases de datos de lectores. No pedimos datos sensibles para navegar el sitio.</p>
 
-            <h2>Cookies</h2>
-            <p>Las cookies son archivos con una pequeña cantidad de datos, que pueden incluir un identificador único anónimo. Se envían a su navegador desde un sitio web y se almacenan en el disco duro de su computadora.</p>
-            <p>Utilizamos cookies para recopilar información. Puede indicar a su navegador que rechace todas las cookies o que indique cuándo se está enviando una cookie. Sin embargo, si no acepta las cookies, es posible que no pueda utilizar algunas partes de nuestro Servicio.</p>
-            
-            <h2>Google AdSense y Cookies de Terceros</h2>
-            <p>Utilizamos Google AdSense para mostrar anuncios en nuestro Servicio. Google, como proveedor externo, utiliza cookies para publicar anuncios en nuestro Servicio.</p>
-            <ul>
-                <li>El uso de la cookie DART de Google le permite a él y a sus socios publicar anuncios a nuestros usuarios basados en su visita a nuestro Servicio u otros sitios en Internet.</li>
-                <li>Los usuarios pueden optar por no usar la cookie DART visitando la página de configuración de anuncios de Google.</li>
-                <li>También utilizamos otros proveedores de publicidad de terceros. Estos proveedores pueden utilizar cookies para publicar anuncios basados en las visitas anteriores de un usuario a nuestro sitio web o a otros sitios web.</li>
-            </ul>
+          <h2>3. Finalidades</h2>
+          <ul>
+            <li>Mostrar y mejorar el periodismo digital, medir audiencia y detectar abusos o fallos.</li>
+            <li>Responder solicitudes de contacto, correcciones y soporte de la app.</li>
+            <li>Mostrar publicidad propia y de terceros (Google AdSense y redes asociadas).</li>
+            <li>Cumplir obligaciones legales y de seguridad.</li>
+          </ul>
 
-            <h2>Cambios a esta Política de Privacidad</h2>
-            <p>Podemos actualizar nuestra Política de Privacidad de vez en cuando. Le notificaremos cualquier cambio publicando la nueva Política de Privacidad en esta página.</p>
+          <h2>4. Cookies y tecnologías similares</h2>
+          <p>
+            Usamos cookies propias (por ejemplo, recordar que cerraste el aviso de la app) y cookies de terceros.
+            Puedes bloquear cookies en tu navegador; algunas funciones publicitarias dejarán de personalizarse.
+          </p>
 
-            <h2>Contáctenos</h2>
-            <p>Si tiene alguna pregunta sobre esta Política de Privacidad, por favor <Link href="/contacto">contáctenos</Link>.</p>
+          <h2>5. Google AdSense y partners publicitarios</h2>
+          <p>
+            Google, como proveedor externo, utiliza cookies para publicar anuncios en el Servicio. Google y sus
+            socios pueden mostrar anuncios basados en visitas anteriores a este u otros sitios. Los usuarios
+            pueden inhabilitar la personalización en la configuración de anuncios de Google:
+          </p>
+          <p>
+            <a href="https://www.google.com/settings/ads" target="_blank" rel="noreferrer">https://www.google.com/settings/ads</a>
+          </p>
+          <p>
+            Cómo usa Google los datos: <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noreferrer">policies.google.com/technologies/partner-sites</a>.
+          </p>
+          <p>
+            Otros anunciantes o medidores pueden usar cookies propias. Los anuncios internos de Noticias.lat
+            se etiquetan como publicidad o patrocinado.
+          </p>
+
+          <h2>6. Google Analytics</h2>
+          <p>
+            Usamos Google Analytics 4 para estadísticas agregadas de uso. La IP se trata de forma seudonimizada
+            cuando la configuración lo permite. Puedes oponerte con complementos de inhabilitación de Google
+            o bloqueando scripts de analítica.
+          </p>
+
+          <h2>7. Cloudflare</h2>
+          <p>
+            El sitio se entrega a través de Cloudflare (CDN, seguridad y, en su caso, señales de rastreo).
+            Cloudflare puede tratar datos técnicos según su propia política para prestar el servicio de red.
+          </p>
+
+          <h2>8. Conservación</h2>
+          <p>
+            Los registros técnicos se conservan el tiempo necesario para seguridad y estadística. Los correos
+            de contacto se guardan mientras dure la gestión y las obligaciones legales asociadas.
+          </p>
+
+          <h2>9. Destinatarios</h2>
+          <p>
+            Encargados de tratamiento habituales: Google (Ads, Analytics, Play), Cloudflare e infraestructura
+            de alojamiento/API. No cedemos tu correo de contacto a terceros para marketing ajeno.
+          </p>
+
+          <h2>10. Transferencias internacionales</h2>
+          <p>
+            Proveedores como Google y Cloudflare pueden tratar datos en Estados Unidos u otros países con
+            cláusulas y medidas reconocidas por su normativa.
+          </p>
+
+          <h2>11. Menores</h2>
+          <p>
+            El Servicio está dirigido a un público general adulto. No recopilamos de forma consciente datos
+            de menores de 13 años (o la edad digital mínima de tu país).
+          </p>
+
+          <h2>12. Tus derechos</h2>
+          <p>
+            Según tu legislación (incluida, cuando aplique, normativa latinoamericana de protección de datos o
+            GDPR si eres residente del EEE), puedes pedir acceso, rectificación, supresión, oposición o
+            limitación, y retirar el consentimiento de cookies no esenciales. Escríbenos a {SITE_EMAIL}.
+          </p>
+
+          <h2>13. Cambios</h2>
+          <p>Publicaremos cualquier cambio material en esta página con nueva fecha de actualización.</p>
+
+          <h2>14. Contacto</h2>
+          <p>
+            Privacidad y datos: <Link href="/contacto">Contacto</Link> o {SITE_EMAIL}.
+          </p>
         </div>
       </div>
     </Layout>

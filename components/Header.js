@@ -1,227 +1,199 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { CATEGORIES, COUNTRIES, PLAY_STORE_URL } from '../lib/site';
 
 export default function Header() {
-    const [menuActivo, setMenuActivo] = useState(false);
-    const [paisesOpen, setPaisesOpen] = useState(false);
-    const router = useRouter();
-    const { categoria, pais, tab } = router.query;
+  const [menuActivo, setMenuActivo] = useState(false);
+  const [paisesOpen, setPaisesOpen] = useState(false);
+  const router = useRouter();
+  const { categoria, pais } = router.query;
 
-    const closeMenu = () => {
-        setMenuActivo(false);
-        setPaisesOpen(false);
-    };
+  const closeMenu = () => {
+    setMenuActivo(false);
+    setPaisesOpen(false);
+  };
 
-    // Lógica para saber qué botón del menú está activo
-    let activeKey = categoria || pais || 'todos';
-    
-    // Si estamos en la página de radios o podcasts
-    if (router.pathname.startsWith('/radio')) {
-        activeKey = tab === 'podcasts' ? 'podcasts' : 'radios';
-    }
-    
-    // Si estamos en la Zona Gamer
-    if (router.pathname.startsWith('/juegos')) activeKey = 'juegos';
-    
-    // Páginas estáticas
-    if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
-    if (router.pathname.startsWith('/contacto')) activeKey = 'contacto';
+  let activeKey = categoria || pais || 'todos';
+  if (router.pathname.startsWith('/podcast')) activeKey = 'podcast';
+  if (router.pathname.startsWith('/app')) activeKey = 'app';
+  if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
+  if (router.pathname.startsWith('/contacto')) activeKey = 'contacto';
+  if (router.pathname === '/' && !categoria && !pais) activeKey = 'todos';
 
-    const getLinkClass = (key) => activeKey === key ? 'nav-link active' : 'nav-link';
-    
-    // FORMATO DE FECHA
-    const fechaHoy = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const getLinkClass = (key) => (activeKey === key ? 'nav-link active' : 'nav-link');
+  const fechaHoy = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
-    return (
-        <>
-            {/* 1. TICKER SUPERIOR */}
-            <div className="news-ticker-bar">
-                <div className="container ticker-flex">
-                    <span className="ticker-label">ÚLTIMA HORA</span>
-                    <div className="ticker-text-wrapper">
-                        <p className="ticker-text">
-                            Cobertura global las 24 hs. • {fechaHoy} • Noticias actualizadas al minuto.
-                        </p>
-                    </div>
+  const south = COUNTRIES.filter((item) => item.region === 'Suramérica');
+  const central = COUNTRIES.filter((item) => item.region === 'Centroamérica');
+  const north = COUNTRIES.filter((item) => item.region === 'Norte / Caribe');
+
+  return (
+    <>
+      <div className="news-ticker-bar">
+        <div className="container ticker-flex">
+          <span className="ticker-label">ÚLTIMA HORA</span>
+          <div className="ticker-text-wrapper">
+            <p className="ticker-text">
+              Cobertura 24 h · Redacción propia · {fechaHoy} · App oficial en Google Play
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <header className="main-header glass-effect">
+        <nav className="container nav-container">
+          <Link href="/" className="logo-branding" onClick={closeMenu}>
+            <span className="logo-main">
+              Noticias<span className="dot">.lat</span>
+            </span>
+            <span className="logo-badge">Redacción LATAM</span>
+          </Link>
+
+          <ul className="nav-links desktop-menu">
+            <li>
+              <Link href="/podcast" className={`nav-link-audio ${activeKey === 'podcast' ? 'active' : ''}`}>
+                <i className="fas fa-podcast"></i> Podcast
+              </Link>
+            </li>
+            <li>
+              <Link href="/app" className={getLinkClass('app')}>
+                App
+              </Link>
+            </li>
+            {CATEGORIES.slice(0, 5).map((item) => (
+              <li key={item.slug}>
+                <Link href={item.slug === 'todos' ? '/' : `/?categoria=${item.slug}`} className={getLinkClass(item.slug)}>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+            <li className="dropdown-wrapper">
+              <span className="nav-link dropdown-trigger">
+                Países <i className="fas fa-chevron-down"></i>
+              </span>
+              <div className="mega-menu">
+                <div className="mega-menu-grid">
+                  <div className="mm-column">
+                    <h4>Suramérica</h4>
+                    {south.map((item) => (
+                      <Link key={item.code} href={`/?pais=${item.code}`}>
+                        {item.flag} {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="mm-column">
+                    <h4>Centroamérica</h4>
+                    {central.map((item) => (
+                      <Link key={item.code} href={`/?pais=${item.code}`}>
+                        {item.flag} {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="mm-column">
+                    <h4>Norte / Caribe</h4>
+                    {north.map((item) => (
+                      <Link key={item.code} href={`/?pais=${item.code}`}>
+                        {item.flag} {item.name}
+                      </Link>
+                    ))}
+                    <div className="mm-divider"></div>
+                    <Link href="/?categoria=internacional">Mundo</Link>
+                  </div>
                 </div>
+              </div>
+            </li>
+          </ul>
+
+          <button
+            className={`menu-toggle ${menuActivo ? 'is-active' : ''}`}
+            onClick={() => setMenuActivo(!menuActivo)}
+            aria-label="Abrir menú"
+            type="button"
+          >
+            <span className="bar"></span>
+            <span className="bar"></span>
+            <span className="bar"></span>
+          </button>
+        </nav>
+      </header>
+
+      <div className={`mobile-menu-overlay ${menuActivo ? 'active' : ''}`} onClick={closeMenu}></div>
+
+      <div className={`mobile-side-menu ${menuActivo ? 'active' : ''}`}>
+        <div className="mobile-header">
+          <span className="mobile-title">Menú</span>
+          <button className="mobile-close" onClick={closeMenu} type="button" aria-label="Cerrar menú">
+            &times;
+          </button>
+        </div>
+
+        <div className="mobile-scroll-content">
+          <Link href="/podcast" className="mobile-video-btn" onClick={closeMenu}>
+            <i className="fas fa-podcast"></i> Escuchar podcast
+          </Link>
+          <a
+            href={PLAY_STORE_URL}
+            className="mobile-video-btn"
+            style={{ background: '#0f172a', marginTop: '-1rem' }}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeMenu}
+          >
+            <i className="fab fa-google-play"></i> Descargar la app
+          </a>
+
+          <div className="mobile-links-list">
+            <p className="mobile-section-title">Categorías</p>
+            {CATEGORIES.map((item) => (
+              <Link
+                key={item.slug}
+                href={item.slug === 'todos' ? '/' : `/?categoria=${item.slug}`}
+                onClick={closeMenu}
+                className={activeKey === item.slug ? 'active' : ''}
+              >
+                {item.label}
+              </Link>
+            ))}
+
+            <hr className="mobile-divider" />
+
+            <div className="mobile-accordion">
+              <button
+                className={`accordion-trigger ${paisesOpen ? 'open' : ''}`}
+                onClick={() => setPaisesOpen(!paisesOpen)}
+                type="button"
+              >
+                Países de Latinoamérica <i className={`fas fa-chevron-${paisesOpen ? 'up' : 'down'}`}></i>
+              </button>
+              {paisesOpen && (
+                <div className="accordion-content">
+                  <div className="country-grid-mobile">
+                    {COUNTRIES.map((item) => (
+                      <Link key={item.code} href={`/?pais=${item.code}`} onClick={closeMenu}>
+                        {item.flag} {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* 2. HEADER PRINCIPAL */}
-            <header className="main-header glass-effect">
-                <nav className="container nav-container">
-                    
-                    <Link href="/" className="logo-branding" onClick={closeMenu}>
-                        <span className="logo-main">Noticias<span className="dot">.lat</span></span>
-                        <span className="logo-badge">AudioNoticias</span>
-                    </Link>
-                    
-                    <ul className="nav-links desktop-menu">
-                        {/* NUEVO: Botón Podcast / Audio reemplazando el Feed */}
-                        <li>
-                            <Link href="/radios?tab=podcasts" className={`nav-link-audio ${activeKey === 'podcasts' ? 'active' : ''}`}>
-                                <i className="fas fa-podcast"></i> Podcast / Audio
-                            </Link>
-                        </li>
+            <hr className="mobile-divider" />
 
-                        <li>
-                            <Link href="/radios" className={getLinkClass('radios')}>
-                                <i className="fas fa-broadcast-tower"></i> Radios
-                            </Link>
-                        </li>
-
-                        {/* NUEVO: Enlace a Zona Gamer */}
-                        <li>
-                            <Link href="/juegos" className={getLinkClass('juegos')}>
-                                <i className="fas fa-gamepad"></i> Juegos
-                            </Link>
-                        </li>
-
-                        <Link href="/miembros" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-bold transition shadow-md ml-4 flex items-center gap-2 hover:-translate-y-0.5">
-                                <span className="text-xl">🌟</span> Publicar Noticia
-                        </Link>
-
-                        <li><Link href="/?categoria=todos" className={getLinkClass('todos')}>General</Link></li>
-                        <li><Link href="/?categoria=politica" className={getLinkClass('politica')}>Política</Link></li>
-                        <li><Link href="/?categoria=economia" className={getLinkClass('economia')}>Economía</Link></li>
-                        
-                        <li className="dropdown-wrapper">
-                            <span className="nav-link dropdown-trigger">
-                                Países <i className="fas fa-chevron-down"></i>
-                            </span>
-                            <div className="mega-menu">
-                                <div className="mega-menu-grid">
-                                    <div className="mm-column">
-                                        <h4>Suramérica</h4>
-                                        <Link href="/?pais=ar">🇦🇷 Argentina</Link>
-                                        <Link href="/?pais=bo">🇧🇴 Bolivia</Link>
-                                        <Link href="/?pais=br">🇧🇷 Brasil</Link>
-                                        <Link href="/?pais=cl">🇨🇱 Chile</Link>
-                                        <Link href="/?pais=co">🇨🇴 Colombia</Link>
-                                        <Link href="/?pais=ec">🇪🇨 Ecuador</Link>
-                                        <Link href="/?pais=py">🇵🇾 Paraguay</Link>
-                                        <Link href="/?pais=pe">🇵🇪 Perú</Link>
-                                        <Link href="/?pais=uy">🇺🇾 Uruguay</Link>
-                                        <Link href="/?pais=ve">🇻🇪 Venezuela</Link>
-                                    </div>
-                                    <div className="mm-column">
-                                        <h4>Centroamérica</h4>
-                                        <Link href="/?pais=cr">🇨🇷 Costa Rica</Link>
-                                        <Link href="/?pais=sv">🇸🇻 El Salvador</Link>
-                                        <Link href="/?pais=gt">🇬🇹 Guatemala</Link>
-                                        <Link href="/?pais=hn">🇭🇳 Honduras</Link>
-                                        <Link href="/?pais=ni">🇳🇮 Nicaragua</Link>
-                                        <Link href="/?pais=pa">🇵🇦 Panamá</Link>
-                                    </div>
-                                    <div className="mm-column">
-                                        <h4>Norte / Caribe</h4>
-                                        <Link href="/?pais=mx">🇲🇽 México</Link>
-                                        <Link href="/?pais=cu">🇨🇺 Cuba</Link>
-                                        <Link href="/?pais=do">🇩🇴 Rep. Dom.</Link>
-                                        <div className="mm-divider"></div>
-                                        <h4>Más</h4>
-                                        <Link href="/?categoria=internacional">🌍 Mundo</Link>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li><Link href="/?categoria=tecnologia" className={getLinkClass('tecnologia')}>Tech</Link></li>
-                        <li><Link href="/?categoria=deportes" className={getLinkClass('deportes')}>Deportes</Link></li>
-                    </ul>
-
-                    <button 
-                        className={`menu-toggle ${menuActivo ? 'is-active' : ''}`} 
-                        onClick={() => setMenuActivo(!menuActivo)}
-                    >
-                        <span className="bar"></span>
-                        <span className="bar"></span>
-                        <span className="bar"></span>
-                    </button>
-                </nav>
-            </header>
-
-            <div className={`mobile-menu-overlay ${menuActivo ? 'active' : ''}`} onClick={closeMenu}></div>
-            
-            <div className={`mobile-side-menu ${menuActivo ? 'active' : ''}`}>
-                <div className="mobile-header">
-                    <span className="mobile-title">Menú</span>
-                    <button className="mobile-close" onClick={closeMenu}>&times;</button>
-                </div>
-
-                <div className="mobile-scroll-content">
-                    {/* Botón Principal Móvil (Podcast / Audio) */}
-                    <Link href="/radios?tab=podcasts" className="mobile-video-btn" onClick={closeMenu} style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}>
-                        <i className="fas fa-podcast"></i> Escuchar Podcast / Audios
-                    </Link>
-
-                    <div className="mobile-links-list">
-                        <p className="mobile-section-title">Secciones</p>
-                        
-                        <Link href="/radios" onClick={closeMenu} className={activeKey === 'radios' ? 'active' : ''} style={{color: '#0066cc', fontWeight: '700'}}>
-                            <i className="fas fa-broadcast-tower" style={{marginRight: '8px'}}></i> Radios en Vivo
-                        </Link>
-                        
-                        <Link href="/juegos" onClick={closeMenu} className={activeKey === 'juegos' ? 'active' : ''} style={{color: '#10b981', fontWeight: '700', marginTop: '10px'}}>
-                            <i className="fas fa-gamepad" style={{marginRight: '8px'}}></i> Zona Gamer
-                        </Link>
-
-                        <p className="mobile-section-title" style={{marginTop: '1.5rem'}}>Categorías</p>
-                        <Link href="/?categoria=todos" onClick={closeMenu} className={activeKey === 'todos' ? 'active' : ''}>General</Link>
-                        <Link href="/?categoria=politica" onClick={closeMenu} className={activeKey === 'politica' ? 'active' : ''}>Política</Link>
-                        <Link href="/?categoria=economia" onClick={closeMenu} className={activeKey === 'economia' ? 'active' : ''}>Economía</Link>
-                        <Link href="/?categoria=tecnologia" onClick={closeMenu} className={activeKey === 'tecnologia' ? 'active' : ''}>Tecnología</Link>
-                        <Link href="/?categoria=deportes" onClick={closeMenu} className={activeKey === 'deportes' ? 'active' : ''}>Deportes</Link>
-                        <Link href="/?categoria=entretenimiento" onClick={closeMenu} className={activeKey === 'entretenimiento' ? 'active' : ''}>Show</Link>
-                        <Link href="/?categoria=salud" onClick={closeMenu} className={activeKey === 'salud' ? 'active' : ''}>Salud</Link>
-                        <Link href="/?categoria=internacional" onClick={closeMenu} className={activeKey === 'internacional' ? 'active' : ''}>Mundo</Link>
-
-                        <hr className="mobile-divider" />
-
-                        <div className="mobile-accordion">
-                            <button 
-                                className={`accordion-trigger ${paisesOpen ? 'open' : ''}`} 
-                                onClick={() => setPaisesOpen(!paisesOpen)}
-                            >
-                                Países de Latinoamérica <i className={`fas fa-chevron-${paisesOpen ? 'up' : 'down'}`}></i>
-                            </button>
-                            
-                            {paisesOpen && (
-                                <div className="accordion-content">
-                                    <div className="country-grid-mobile">
-                                        <Link href="/?pais=ar" onClick={closeMenu}>🇦🇷 Argentina</Link>
-                                        <Link href="/?pais=bo" onClick={closeMenu}>🇧🇴 Bolivia</Link>
-                                        <Link href="/?pais=br" onClick={closeMenu}>🇧🇷 Brasil</Link>
-                                        <Link href="/?pais=cl" onClick={closeMenu}>🇨🇱 Chile</Link>
-                                        <Link href="/?pais=co" onClick={closeMenu}>🇨🇴 Colombia</Link>
-                                        <Link href="/?pais=cr" onClick={closeMenu}>🇨🇷 Costa Rica</Link>
-                                        <Link href="/?pais=cu" onClick={closeMenu}>🇨🇺 Cuba</Link>
-                                        <Link href="/?pais=ec" onClick={closeMenu}>🇪🇨 Ecuador</Link>
-                                        <Link href="/?pais=sv" onClick={closeMenu}>🇸🇻 El Salvador</Link>
-                                        <Link href="/?pais=gt" onClick={closeMenu}>🇬🇹 Guatemala</Link>
-                                        <Link href="/?pais=hn" onClick={closeMenu}>🇭🇳 Honduras</Link>
-                                        <Link href="/?pais=mx" onClick={closeMenu}>🇲🇽 México</Link>
-                                        <Link href="/?pais=ni" onClick={closeMenu}>🇳🇮 Nicaragua</Link>
-                                        <Link href="/?pais=pa" onClick={closeMenu}>🇵🇦 Panamá</Link>
-                                        <Link href="/?pais=py" onClick={closeMenu}>🇵🇾 Paraguay</Link>
-                                        <Link href="/?pais=pe" onClick={closeMenu}>🇵🇪 Perú</Link>
-                                        <Link href="/?pais=do" onClick={closeMenu}>🇩🇴 R. Dominicana</Link>
-                                        <Link href="/?pais=uy" onClick={closeMenu}>🇺🇾 Uruguay</Link>
-                                        <Link href="/?pais=ve" onClick={closeMenu}>🇻🇪 Venezuela</Link>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <hr className="mobile-divider" />
-                        
-                        <div className="mobile-footer-links">
-                            <Link href="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link>
-                            <Link href="/contacto" onClick={closeMenu}>Contacto</Link>
-                        </div>
-                    </div>
-                </div>
+            <div className="mobile-footer-links">
+              <Link href="/sobre-nosotros" onClick={closeMenu}>Quiénes somos</Link>
+              <Link href="/contacto" onClick={closeMenu}>Contacto</Link>
+              <Link href="/app" onClick={closeMenu}>App Android</Link>
             </div>
-        </>
-    );
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }

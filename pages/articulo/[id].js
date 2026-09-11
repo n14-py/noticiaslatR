@@ -37,6 +37,7 @@ export async function getServerSideProps(context) {
 export default function ArticlePage({ article, recommended, unavailable, missing }) {
   const [progress, setProgress] = useState(0);
   const [bannerAd, setBannerAd] = useState(null);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     const updateProgress = () => {
@@ -135,7 +136,7 @@ export default function ArticlePage({ article, recommended, unavailable, missing
             <div className="article-meta-row" style={{ justifyContent: 'flex-start', borderTop: 'none', padding: '0 0 1.2rem 0', marginBottom: 0 }}>
               <div className="meta-item"><i className="far fa-calendar-alt"></i><span>{fechaFormat}</span></div>
               <div className="meta-item"><i className="fas fa-globe-americas"></i><span>{article.pais ? article.pais.toUpperCase() : 'LATAM'}</span></div>
-              <div className="meta-item"><span className="source-badge">Redacción Noticias.lat</span></div>
+              <div className="meta-item"><span className="source-badge">{getSourceName(article)}</span></div>
             </div>
           </div>
 
@@ -167,8 +168,21 @@ export default function ArticlePage({ article, recommended, unavailable, missing
 
           {article.aiSummary && (
             <div className="ai-summary-box">
-              <div className="ai-summary-header"><i className="fas fa-key"></i> Puntos clave</div>
-              <p>{article.aiSummary}</p>
+              <button
+                type="button"
+                className="summary-toggle"
+                onClick={() => setShowSummary((open) => !open)}
+                aria-expanded={showSummary}
+              >
+                <i className="fas fa-key"></i>
+                {showSummary ? 'Ocultar resumen' : 'Leer resumen'}
+              </button>
+              {showSummary && (
+                <div className="summary-panel">
+                  <div className="ai-summary-header">Puntos clave</div>
+                  <p>{article.aiSummary}</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -194,6 +208,34 @@ export default function ArticlePage({ article, recommended, unavailable, missing
               );
             })}
           </div>
+
+          {article.youtubeId && (
+            <div className="youtube-video-container">
+              <h3>
+                <i className="fab fa-youtube" style={{ color: '#ff0000' }}></i> Cobertura en video
+              </h3>
+              <div className="video-responsive-wrapper">
+                <iframe
+                  src={`https://www.youtube.com/embed/${article.youtubeId}?autoplay=0&rel=0`}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title="Video de la noticia"
+                ></iframe>
+              </div>
+            </div>
+          )}
+
+          {article.enlaceOriginal && (
+            <div className="article-source-link">
+              <p>
+                Fuente consultada:{' '}
+                <a href={article.enlaceOriginal} target="_blank" rel="noopener noreferrer">
+                  {getSourceName(article)}
+                </a>
+              </p>
+            </div>
+          )}
 
           <div className="editorial-note">
             <p>
@@ -271,4 +313,16 @@ export default function ArticlePage({ article, recommended, unavailable, missing
       <AppBanner />
     </Layout>
   );
+}
+
+function getSourceName(article) {
+  if (article.fuente) return article.fuente;
+  if (article.enlaceOriginal) {
+    try {
+      return new URL(article.enlaceOriginal).hostname.replace(/^www\./, '');
+    } catch {
+      return 'Agencia de noticias';
+    }
+  }
+  return 'Redacción';
 }

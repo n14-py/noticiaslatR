@@ -17,7 +17,7 @@ export default function SobreNosotros() {
       <div className="static-hero">
         <div className="container">
           <h1>Quiénes somos</h1>
-          <p>Un medio digital de Latinoamérica. Las más de 50.000 noticias de noticias.lat son producción propia.</p>
+          <p>Un medio digital de Latinoamérica y el mundo. Producimos unas 300 noticias al día. Más de 500 mil personas nos ven cada mes en YouTube.</p>
         </div>
       </div>
 
@@ -47,8 +47,17 @@ export default function SobreNosotros() {
             <li>Cuando aporta valor, producimos audionoticia y video para la web y para la app.</li>
           </ol>
           <p>
-            Las más de <strong>50.000 noticias</strong> publicadas en noticias.lat siguen este flujo. El archivo
-            es nuestro: cada URL de artículo corresponde a una pieza elaborada para este medio.
+            Publicamos unas <strong>300 noticias al día</strong> para Latinoamérica y el mundo. El archivo de
+            noticias.lat supera las <strong>50.000 notas</strong> propias: cada URL es una pieza elaborada para
+            este medio.
+          </p>
+          <p>
+            En YouTube nos siguen más de <strong>500 mil personas al mes</strong> a través de nuestros canales
+            (<a href="https://www.youtube.com/@Noticiaslat-3" target="_blank" rel="noreferrer">Noticiaslat-3</a>,{' '}
+            <a href="https://www.youtube.com/@noticias-lat" target="_blank" rel="noreferrer">noticias-lat</a>,{' '}
+            <a href="https://www.youtube.com/@NoticiasLat-2" target="_blank" rel="noreferrer">NoticiasLat-2</a> y{' '}
+            <a href="https://www.youtube.com/@NoticiasLat1" target="_blank" rel="noreferrer">NoticiasLat1</a>).
+            La misma cobertura llega a la web, al podcast y a la app.
           </p>
         </section>
 

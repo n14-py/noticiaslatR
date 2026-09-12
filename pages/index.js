@@ -178,6 +178,7 @@ useEffect(() => {
                 <title>{`${titleText} - ${SITE_NAME}`}</title>
                 <meta name="description" content={`Mantente informado con las últimas noticias de ${titleText} en Noticias.lat. Cobertura global, audionoticias, videos y actualizaciones al minuto.`} />
                 <link rel="canonical" href={`https://www.noticias.lat${router.asPath.split('?')[0]}`} />
+                <meta name="facebook-domain-verification" content="c8nvs1njfzmtn8mnrkv5mr4soevtd9" />
             </Head>
 
             <div className="container main-content" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 15px' }}>

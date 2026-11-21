@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useRef, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
+import { toNewsCard } from '../utils/publicArticle';
 
 export const runtime = 'experimental-edge';
 
@@ -69,7 +70,7 @@ export async function getServerSideProps(context) {
 
         if (queryParams.tab === 'podcasts') {
             // BACKEND FIX: Usamos la misma lógica robusta del index.js para asegurar que traiga las noticias con audio
-            url = `${API_URL}/api/articles?sitio=noticias.lat&limite=${LIMITE_POR_PAGINA}&pagina=${queryParams.pagina}&hasAudio=true`;
+            url = `${API_URL}/api/articles?sitio=noticias.lat&limite=${LIMITE_POR_PAGINA}&pagina=${queryParams.pagina}&hasAudio=true&vista=portada`;
             if (queryParams.pais) {
                 url += `&pais=${encodeURIComponent(queryParams.pais)}`;
                 tituloPagina = `Audionoticias de ${queryParams.pais}`;
@@ -81,6 +82,7 @@ export async function getServerSideProps(context) {
             
             // Extracción a prueba de fallos (Mismo sistema que index.js)
             items = data.articulos || data.articles || data.docs || (Array.isArray(data) ? data : []);
+            items = items.map(toNewsCard);
             totalPaginas = data.totalPaginas || data.totalPages || 1;
             paginaActual = data.paginaActual || data.page || queryParams.pagina;
 

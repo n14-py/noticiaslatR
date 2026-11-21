@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Layout from '../../components/Layout';
 
 import AppBanner from '../../components/AppBanner';
+import { toArticlePage, toNewsCard, toWebAd } from '../../utils/publicArticle';
 
 // Configuracion Edge estricta exigida
 export const runtime = 'experimental-edge';
@@ -25,20 +26,24 @@ export async function getServerSideProps(context) {
         if (!res.ok) {
             return { notFound: true };
         }
-        const article = await res.json();
+        const article = toArticlePage(await res.json());
 
-        // Obtenemos más recomendaciones (el endpoint trae 12 por defecto)
-// Obtenemos más recomendaciones (el endpoint trae 12 por defecto)
-        const recRes = await fetch(`${API_URL}/api/articles/recommended?sitio=noticias.lat&categoria=${article.categoria}&excludeId=${id}`);
-        const recommended = recRes.ok ? await recRes.json() : [];
+        const [recRes, adsRes] = await Promise.all([
+            fetch(`${API_URL}/api/articles/recommended?sitio=noticias.lat&categoria=${encodeURIComponent(article.categoria || '')}&excludeId=${id}&vista=portada`).catch(() => null),
+            fetch(`${API_URL}/api/ads/active?plataforma=web`).catch(() => null),
+        ]);
 
-        // --- FETCH DE ANUNCIOS WEB ---
+        let recommended = [];
+        if (recRes && recRes.ok) {
+            const recData = await recRes.json();
+            if (Array.isArray(recData)) recommended = recData.map(toNewsCard);
+        }
+
         let webAds = [];
         try {
-            const adsRes = await fetch(`${API_URL}/api/ads/active?plataforma=web`);
-            if (adsRes.ok) {
+            if (adsRes && adsRes.ok) {
                 const adsData = await adsRes.json();
-                if (adsData.success && adsData.ads) webAds = adsData.ads;
+                if (adsData.success && adsData.ads) webAds = adsData.ads.map(toWebAd);
             }
         } catch (e) {}
 

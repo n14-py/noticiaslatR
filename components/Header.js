@@ -21,9 +21,6 @@ export default function Header() {
         activeKey = tab === 'podcasts' ? 'podcasts' : 'radios';
     }
     
-    // Si estamos en la Zona Gamer
-    if (router.pathname.startsWith('/juegos')) activeKey = 'juegos';
-    
     // Páginas estáticas
     if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
     if (router.pathname.startsWith('/contacto')) activeKey = 'contacto';
@@ -69,13 +66,6 @@ export default function Header() {
                         <li>
                             <Link href="/radios" className={getLinkClass('radios')}>
                                 <i className="fas fa-broadcast-tower"></i> Radios
-                            </Link>
-                        </li>
-
-                        {/* NUEVO: Enlace a Zona Gamer */}
-                        <li>
-                            <Link href="/juegos" className={getLinkClass('juegos')}>
-                                <i className="fas fa-gamepad"></i> Juegos
                             </Link>
                         </li>
 
@@ -168,10 +158,6 @@ export default function Header() {
                         
                         <Link href="/radios" onClick={closeMenu} className={activeKey === 'radios' ? 'active' : ''} style={{color: '#0066cc', fontWeight: '700'}}>
                             <i className="fas fa-broadcast-tower" style={{marginRight: '8px'}}></i> Radios en Vivo
-                        </Link>
-                        
-                        <Link href="/juegos" onClick={closeMenu} className={activeKey === 'juegos' ? 'active' : ''} style={{color: '#10b981', fontWeight: '700', marginTop: '10px'}}>
-                            <i className="fas fa-gamepad" style={{marginRight: '8px'}}></i> Zona Gamer
                         </Link>
 
                         <p className="mobile-section-title" style={{marginTop: '1.5rem'}}>Categorías</p>

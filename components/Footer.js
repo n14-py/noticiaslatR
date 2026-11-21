@@ -19,10 +19,10 @@ export default function Footer() {
                     {/* AQUÍ ESTÁN LAS REDES SOCIALES */}
                     <div className="footer-social-icons">
                        <a href="https://www.instagram.com/noticias.lat" target="_blank" rel="noreferrer" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
-                        <a href="https://www.youtube.com/@Noticiaslat-3" target="_blank" rel="noreferrer" aria-label="YouTube"><i className="fab fa-youtube"></i></a>
-                        <a href="https://www.youtube.com/@noticias-lat" target="_blank" rel="noreferrer" aria-label="YouTube"><i className="fab fa-youtube"></i></a>
-                        <a href="https://www.youtube.com/@NoticiasLat-2" target="_blank" rel="noreferrer" aria-label="YouTube"><i className="fab fa-youtube"></i></a>
-                        <a href="https://www.youtube.com/@NoticiasLat1" target="_blank" rel="noreferrer" aria-label="YouTube"><i className="fab fa-youtube"></i></a>
+                        <a href="https://www.youtube.com/@noticias-lat" target="_blank" rel="noreferrer" aria-label="YouTube Noticias LAT"><i className="fab fa-youtube"></i></a>
+                        <a href="https://www.youtube.com/@NoticiasLat1" target="_blank" rel="noreferrer" aria-label="YouTube Noticias LAT Última Hora"><i className="fab fa-youtube"></i></a>
+                        <a href="https://www.youtube.com/@NoticiasLat-2" target="_blank" rel="noreferrer" aria-label="YouTube Noticias LAT AHORA"><i className="fab fa-youtube"></i></a>
+                        <a href="https://www.youtube.com/@Noticiaslat-3" target="_blank" rel="noreferrer" aria-label="YouTube Noticias LAT HOY"><i className="fab fa-youtube"></i></a>
                     </div>
                 </div>
 
@@ -44,11 +44,8 @@ export default function Footer() {
                         <ul>
                             <li><Link href="/sobre-nosotros">Quiénes Somos</Link></li>
                             <li><Link href="/contacto">Contacto</Link></li>
-                            <li>
-                            <Link href="/miembros" className="text-gray-400 hover:text-blue-400 font-bold transition flex items-center gap-2">
-                            🌟 Portal de Creadores (Publicar)
-                                </Link>
-                            </li>
+                            <li><Link href="/miembros">Miembros</Link></li>
+                            <li><Link href="/publicar">Publicar noticia</Link></li>
                         </ul>
                     </div>
 

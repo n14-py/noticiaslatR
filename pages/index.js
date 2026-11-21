@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../components/Layout';
+import { toNewsCard, toWebAd } from '../utils/publicArticle';
 
 // Configuracion Edge para máxima velocidad en Cloudflare
 export const runtime = 'experimental-edge';
@@ -26,7 +27,7 @@ export async function getServerSideProps(context) {
     const limit = 26; // Aumentado al doble para mayor densidad (AdSense)
     
     // CORRECCIÓN DE PAGINACIÓN: El backend espera "pagina", no "page"
-    let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&pagina=${page}&limite=${limit}`;
+    let endpoint = `${API_URL}/api/articles?sitio=noticias.lat&pagina=${page}&limite=${limit}&vista=portada`;
     
     if (query.categoria && query.categoria !== 'todos') {
         endpoint += `&categoria=${query.categoria}`;
@@ -36,18 +37,19 @@ export async function getServerSideProps(context) {
     }
 
     try {
-        const res = await fetch(endpoint);
+        const [res, adsRes] = await Promise.all([
+            fetch(endpoint),
+            fetch(`${API_URL}/api/ads/active?plataforma=web`).catch(() => null),
+        ]);
         if (!res.ok) throw new Error('Error fetching articles');
         const data = await res.json();
 
-        // --- NUEVO: FETCH DE ANUNCIOS WEB ---
         let webAds = [];
         try {
-            const adsRes = await fetch(`${API_URL}/api/ads/active?plataforma=web`);
-            if (adsRes.ok) {
+            if (adsRes && adsRes.ok) {
                 const adsData = await adsRes.json();
                 if (adsData.success && adsData.ads) {
-                    webAds = adsData.ads;
+                    webAds = adsData.ads.map(toWebAd);
                 }
             }
         } catch (e) { console.error("Error cargando anuncios web:", e); }
@@ -62,6 +64,8 @@ export async function getServerSideProps(context) {
         } else if (Array.isArray(data)) {
             articles = data;
         }
+
+        articles = articles.map(toNewsCard);
 
         return {
             props: {

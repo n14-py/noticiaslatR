@@ -4,6 +4,7 @@ export default function Document() {
   return (
     <Html lang="es">
       <Head>
+        <noscript id="__next_css__DO_NOT_USE__" />
         {/* Fuentes y estilos globales */}
         <link 
           rel="stylesheet" 

@@ -100,6 +100,11 @@ const nextConfig = {
         destination: '/politica-privacidad',
         permanent: true,
       },
+      {
+        source: '/juegos',
+        destination: '/',
+        permanent: true,
+      },
     ];
   },
 };

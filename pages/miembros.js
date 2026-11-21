@@ -1,536 +1,408 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import Layout from '../components/Layout';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.noticias.lat/api';
+const SUPPORTERS_URL = 'https://api.noticias.lat/api/member/supporters';
 
-function MiembrosDashboard() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const [activeTab, setActiveTab] = useState('estudio');
-  const [history, setHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  
-  const [publishing, setPublishing] = useState(false);
-  const [publishMessage, setPublishMessage] = useState({ type: '', text: '' });
-  const [formData, setFormData] = useState({ title: '', content: '', videoType: 'short', image: null });
-  const [imagePreview, setImagePreview] = useState(null);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('lfaf_member');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      fetchHistory(parsedUser.googleId);
-    }
-  }, []);
-
-  const fetchHistory = async (googleId) => {
-    setLoadingHistory(true);
-    try {
-      const res = await fetch(`${API_URL}/member/history/${googleId}`);
-      const data = await res.json();
-      if (data.success) setHistory(data.articles);
-    } catch (err) {
-      console.error("Error cargando historial", err);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  const login = useGoogleLogin({
-    scope: 'https://www.googleapis.com/auth/youtube.readonly',
-    onSuccess: async (tokenResponse) => {
-      setLoading(true); setError('');
-      try {
-        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        }).then(res => res.json());
-
-        const syncResponse = await fetch(`${API_URL}/member/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            googleId: userInfo.sub, email: userInfo.email,
-            displayName: userInfo.name, avatar: userInfo.picture,
-            tokens: tokenResponse 
-          }),
-        });
-
-        const data = await syncResponse.json();
-        if (data.success) {
-          setUser(data.member);
-          localStorage.setItem('lfaf_member', JSON.stringify(data.member));
-          fetchHistory(data.member.googleId);
-        } else {
-          setError('No se pudo verificar tu membresía. Asegúrate de estar suscrito.');
-        }
-      } catch (err) {
-        setError('Error de conexión con el servidor. Intenta de nuevo.');
-      } finally {
-        setLoading(false);
-      }
+const TIERS = [
+    {
+        key: 'socio-fundador',
+        name: 'Socio Fundador',
+        emoji: '👑',
+        price: 'USD 9.99 por mes',
+        message: 'El apoyo más cercano. Hacen posible que Noticias.lat exista y siga creciendo.',
     },
-    onError: () => setError('Inicio de sesión cancelado.')
-  });
+    {
+        key: 'impulsor',
+        name: 'Impulsor',
+        emoji: '🚀',
+        price: 'USD 5.49 por mes',
+        message: 'Le dan impulso a la redacción y mantienen el ritmo de la cobertura.',
+    },
+    {
+        key: 'aliado',
+        name: 'Aliado',
+        emoji: '💙',
+        price: 'USD 2.79 por mes',
+        message: 'Caminan junto al proyecto y sostienen las noticias de cada día.',
+    },
+    {
+        key: 'colaborador',
+        name: 'Colaborador',
+        emoji: '🐱',
+        price: 'USD 0.69 por mes',
+        message: 'Dan el primer paso y ya son parte de quienes mantienen este medio.',
+    },
+];
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('lfaf_member');
-    setHistory([]);
-    setImagePreview(null);
-  };
+const FALLBACK_CHANNELS = [
+    {
+        id: 'UCwpj-DPIUx2hVDlc_gR2uKQ',
+        name: 'Noticias LAT',
+        handle: '@noticias-lat',
+        url: 'https://www.youtube.com/@noticias-lat',
+        joinUrl: 'https://www.youtube.com/channel/UCwpj-DPIUx2hVDlc_gR2uKQ/join',
+        avatar: 'https://yt3.ggpht.com/pBRReNGx7ZoUw9UTluPv_mCibQOUJykz2xg0InZ-UCje9kiPmZfcqcoOL25yh1o4Tv1qSkOhDQ=s240-c-k-c0x00ffffff-no-rj',
+    },
+    {
+        id: 'UCMmKU1g6g5JWdLtzLxs5NKg',
+        name: 'Noticias LAT | Última Hora',
+        handle: '@NoticiasLat1',
+        url: 'https://www.youtube.com/@NoticiasLat1',
+        joinUrl: 'https://www.youtube.com/channel/UCMmKU1g6g5JWdLtzLxs5NKg/join',
+        avatar: 'https://yt3.ggpht.com/_1Sc60PmDAgWmZ_CZhxftL7c5UPL1P1pI2us_aciXzDMww41KgQdlt2hRqSCFoyqLXjy33haRg=s240-c-k-c0x00ffffff-no-rj',
+    },
+    {
+        id: 'UC1oqIJVGLAa1CB5yAH5fDyA',
+        name: 'Noticias LAT | AHORA',
+        handle: '@NoticiasLat-2',
+        url: 'https://www.youtube.com/@NoticiasLat-2',
+        joinUrl: 'https://www.youtube.com/channel/UC1oqIJVGLAa1CB5yAH5fDyA/join',
+        avatar: 'https://yt3.ggpht.com/UxSsLc9Nj-dI8uJIgH-DqmMviKrTwkzeNISaeSwyDuw0hYXz--fw4T7GJBQez4yIlJUk0obpIA=s240-c-k-c0x00ffffff-no-rj',
+    },
+    {
+        id: 'UCOW3IHGU3XK9oS-o8HnPtpw',
+        name: 'Noticias LAT | HOY',
+        handle: '@Noticiaslat-3',
+        url: 'https://www.youtube.com/@Noticiaslat-3',
+        joinUrl: 'https://www.youtube.com/channel/UCOW3IHGU3XK9oS-o8HnPtpw/join',
+        avatar: 'https://yt3.ggpht.com/jA7iOMTi5OZZlaKhTDpF5OMt2rEBsVKDLUXbFZvBMTvDCTGAJsjgTe2l4sSEOd7uy3dabLha3Q=s240-c-k-c0x00ffffff-no-rj',
+    },
+];
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData({ ...formData, image: file });
-      setImagePreview(URL.createObjectURL(file));
+function httpsUrl(value) {
+    return typeof value === 'string' && value.startsWith('https://') ? value : '';
+}
+
+function sanitizeMembers(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+        .filter((member) => member && typeof member.name === 'string' && member.name.trim())
+        .map((member) => ({
+            id: String(member.id || member.name),
+            name: member.name.trim(),
+            avatar: httpsUrl(member.avatar),
+            url: httpsUrl(member.url),
+            tier: typeof member.tier === 'string' ? member.tier : 'miembro',
+            tierName: typeof member.tierName === 'string' && member.tierName.trim() ? member.tierName.trim() : 'Miembro',
+            since: member.since || null,
+            months: Number(member.months) || 0,
+            channels: Array.isArray(member.channels)
+                ? member.channels.filter((channel) => typeof channel === 'string' && channel.trim())
+                : [],
+        }));
+}
+
+function sanitizeChannels(list) {
+    if (!Array.isArray(list) || list.length === 0) return FALLBACK_CHANNELS;
+    const channels = list
+        .filter((channel) => channel && typeof channel.name === 'string' && channel.name.trim())
+        .map((channel) => ({
+            id: channel.id || channel.name,
+            name: channel.name.trim(),
+            handle: typeof channel.handle === 'string' ? channel.handle : '',
+            url: httpsUrl(channel.url),
+            joinUrl: httpsUrl(channel.joinUrl) || httpsUrl(channel.url),
+            avatar: httpsUrl(channel.avatar),
+            subscribers: Number(channel.subscribers) || 0,
+        }))
+        .filter((channel) => channel.joinUrl || channel.url);
+    return channels.length ? channels : FALLBACK_CHANNELS;
+}
+
+function groupMembers(members) {
+    const buckets = new Map();
+    members.forEach((member) => {
+        const key = member.tier || 'miembro';
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(member);
+    });
+
+    const known = TIERS
+        .filter((tier) => buckets.has(tier.key))
+        .map((tier) => ({ ...tier, members: buckets.get(tier.key) }));
+
+    const extra = [...buckets.entries()]
+        .filter(([key]) => !TIERS.some((tier) => tier.key === key))
+        .map(([key, people]) => ({
+            key,
+            name: people[0]?.tierName || 'Miembros',
+            emoji: '⭐',
+            price: '',
+            message: 'También sostienen Noticias.lat con una membresía activa.',
+            members: people,
+        }));
+
+    return known.concat(extra);
+}
+
+function initials(name) {
+    const parts = String(name || '').trim().split(/\s+/).slice(0, 2);
+    const letters = parts.map((part) => part[0] || '').join('').toUpperCase();
+    return letters || '•';
+}
+
+function sinceLabel(member) {
+    if (member.since) {
+        const date = new Date(member.since);
+        if (!Number.isNaN(date.getTime())) {
+            const formatted = date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            return `Apoya desde ${formatted}`;
+        }
     }
-  };
+    if (member.months === 1) return 'Apoya desde hace 1 mes';
+    if (member.months > 1) return `Apoya desde hace ${member.months} meses`;
+    return 'Membresía activa';
+}
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.image || !formData.title || !formData.content) {
-      setPublishMessage({ type: 'error', text: '⚠️ Por favor, completa todos los campos y sube una imagen.' });
-      return;
+function countLabel(total) {
+    if (total === 1) return '1 persona apoya Noticias.lat';
+    return `${total} personas apoyan Noticias.lat`;
+}
+
+function subscriberLabel(value) {
+    const total = Number(value);
+    if (!Number.isFinite(total) || total <= 0) return '';
+    if (total >= 1000000) {
+        const millions = total / 1000000;
+        const text = millions >= 10 ? String(Math.round(millions)) : millions.toFixed(1).replace('.', ',');
+        return `${text} mill. suscriptores`;
     }
-    setPublishing(true); setPublishMessage({ type: '', text: '' });
-
-    const data = new FormData();
-    data.append('googleId', user.googleId);
-    data.append('title', formData.title);
-    data.append('content', formData.content);
-    data.append('videoType', formData.videoType);
-    data.append('image', formData.image);
-
-    try {
-      const res = await fetch(`${API_URL}/member/publish`, { method: 'POST', body: data });
-      const result = await res.json();
-
-      if (result.success) {
-        setPublishMessage({ type: 'success', text: '✅ ¡Publicación exitosa! Tu video está siendo generado.' });
-        const updatedUser = { ...user, creditsUsed: user.creditsUsed + 1 };
-        setUser(updatedUser);
-        localStorage.setItem('lfaf_member', JSON.stringify(updatedUser));
-        
-        setFormData({ title: '', content: '', videoType: 'short', image: null });
-        setImagePreview(null);
-        fetchHistory(user.googleId);
-        
-        setTimeout(() => setActiveTab('historial'), 2000);
-      } else {
-        setPublishMessage({ type: 'error', text: result.error || '❌ Error al intentar publicar.' });
-      }
-    } catch (err) {
-      setPublishMessage({ type: 'error', text: '❌ Ocurrió un error de conexión.' });
-    } finally {
-      setPublishing(false);
+    if (total >= 1000) {
+        const thousands = total / 1000;
+        const text = thousands >= 10 ? String(Math.round(thousands)) : thousands.toFixed(1).replace('.', ',');
+        return `${text} mil suscriptores`;
     }
-  };
+    return `${total.toLocaleString('es-ES')} suscriptores`;
+}
 
-  const hasCredits = user ? (user.totalCredits - user.creditsUsed > 0) : false;
+function Avatar({ name, src, className, fallbackClass }) {
+    const [failed, setFailed] = useState(false);
+    if (!src || failed) {
+        return <span className={fallbackClass} aria-hidden="true">{initials(name)}</span>;
+    }
+    return (
+        <img
+            className={className}
+            src={src}
+            alt=""
+            onError={() => setFailed(true)}
+        />
+    );
+}
 
-  return (
-    <Layout>
-      <Head>
-        <title>Portal Premium de Creadores | Noticias LAT</title>
-      </Head>
-
-      <div className="main-content">
-        {!user ? (
-          <>
-            {/* HERO USANDO TU CSS EXISTENTE */}
-            <div className="static-hero" style={{ padding: '4rem 1rem', marginBottom: '2rem' }}>
-              <div className="container">
-                <span className="member-badge-hero">PROGRAMA DE CREADORES ASOCIADOS</span>
-                <h1 style={{ marginTop: '1rem', fontSize: '3.5rem' }}>Transforma tus ideas en<br/> <span style={{color: 'var(--color-accent)'}}>Videos Virales</span></h1>
-                <p>Al unirte a las membresías de nuestros canales, desbloqueas el acceso exclusivo a nuestro motor de Inteligencia Artificial.</p>
-                
-                <button onClick={() => login()} disabled={loading} className="btn-login-google">
-                  {loading ? 'Conectando...' : 'ENTRAR CON YOUTUBE / GOOGLE'}
-                </button>
-                {error && <div className="error-msg">{error}</div>}
-              </div>
-            </div>
-
-            {/* BENTO GRID USANDO TU CSS EXISTENTE */}
-            <div className="container">
-              <div className="bento-grid" style={{ marginBottom: '4rem' }}>
-                <div className="static-card" style={{ textAlign: 'center' }}>
-                  <div className="icon-box">📰</div>
-                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-texto-titulos)' }}>Artículo en Web</h3>
-                  <p>Tu noticia se publicará directamente en la portada de Noticias LAT, ganando visibilidad inmediata.</p>
-                </div>
-                <div className="static-card" style={{ textAlign: 'center' }}>
-                  <div className="icon-box">🤖</div>
-                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-texto-titulos)' }}>Video Automatizado</h3>
-                  <p>Procesamos tu texto, aplicamos voz neuronal y generamos un video para YouTube de forma automática.</p>
-                </div>
-                <div className="static-card" style={{ textAlign: 'center' }}>
-                  <div className="icon-box">📈</div>
-                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-texto-titulos)' }}>Créditos Acumulativos</h3>
-                  <p>Mientras a más canales estés suscrito, más poder de publicación tendrás (hasta 24 al mes).</p>
-                </div>
-              </div>
-
-              <div className="static-card" style={{ background: 'var(--color-tech-bg)', color: 'white', textAlign: 'center', padding: '3rem' }}>
-                <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Elige tu Canal y Hazte Miembro</h2>
-                <p style={{ color: 'var(--color-texto-suave)', marginBottom: '2rem' }}>Selecciona cualquiera de nuestros canales oficiales.</p>
-                <div className="channels-grid">
-                  <a href="https://www.youtube.com/channel/UCMmKU1g6g5JWdLtzLxs5NKg/join" target="_blank" className="channel-btn">▶️ Última Hora</a>
-                  <a href="https://www.youtube.com/channel/UC1oqIJVGLAa1CB5yAH5fDyA/join" target="_blank" className="channel-btn">▶️ Noticias AHORA</a>
-                  <a href="https://www.youtube.com/channel/UCOW3IHGU3XK9oS-o8HnPtpw/join" target="_blank" className="channel-btn">▶️ Noticias HOY</a>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="container" style={{ marginTop: '2rem' }}>
-            
-            {/* PANEL DE CONTROL SUPERIOR */}
-            <div className="static-card user-header-panel">
-              <div className="user-info">
-                <div style={{ position: 'relative' }}>
-                  <img src={user.avatar} alt="Perfil" className="user-avatar" />
-                  {user.membershipLevel > 0 && <span className="level-badge">LVL {user.membershipLevel}</span>}
-                </div>
-                <div>
-                  <h2 style={{ color: 'var(--color-texto-titulos)', fontSize: '1.5rem' }}>{user.displayName}</h2>
-                  <p style={{ color: 'var(--color-texto-suave)' }}>{user.email}</p>
-                </div>
-              </div>
-              
-              <div className="panel-tabs">
-                <button onClick={() => setActiveTab('estudio')} className={`tab-btn ${activeTab === 'estudio' ? 'active' : ''}`}>Estudio Creativo</button>
-                <button onClick={() => setActiveTab('historial')} className={`tab-btn ${activeTab === 'historial' ? 'active' : ''}`}>Mi Historial</button>
-                <button onClick={logout} className="tab-btn logout">Salir</button>
-              </div>
-            </div>
-
-            {/* PESTAÑA: ESTUDIO DE CREACIÓN */}
-            {activeTab === 'estudio' && (
-              <div className="tab-content fade-in">
-                <div className="stats-grid">
-                  <div className="stat-card" style={{ background: 'var(--color-primario)', color: 'white' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.9rem', opacity: 0.8 }}>CRÉDITOS LISTOS</p>
-                    <h3 style={{ fontSize: '3rem', margin: '10px 0' }}>{user.totalCredits - user.creditsUsed}</h3>
-                    <p style={{ fontSize: '0.9rem' }}>De {user.totalCredits} totales este mes</p>
-                  </div>
-                  <div className="stat-card">
-                    <p style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>NIVEL MULTIPLICADOR</p>
-                    <h3 style={{ fontSize: '2rem', margin: '10px 0', color: 'var(--color-texto-titulos)' }}>Nivel {user.membershipLevel}</h3>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>Basado en suscripciones activas</p>
-                  </div>
-                  <div className="stat-card">
-                    <p style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>RENOVACIÓN</p>
-                    <h3 style={{ fontSize: '1.8rem', margin: '10px 0', color: 'var(--color-texto-titulos)' }}>
-                      {user.nextResetDate ? new Date(user.nextResetDate).toLocaleDateString() : 'N/A'}
-                    </h3>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--color-texto-suave)' }}>Tus créditos se reiniciarán</p>
-                  </div>
-                </div>
-
-                <div className="static-card" style={{ marginTop: '2rem' }}>
-                  {!hasCredits ? (
-                    <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-                      <div className="icon-box" style={{ background: '#fff7ed', color: '#ea580c', margin: '0 auto 1rem auto' }}>🔒</div>
-                      <h3 style={{ fontSize: '1.8rem', color: 'var(--color-texto-titulos)' }}>No tienes créditos disponibles</h3>
-                      <p style={{ color: 'var(--color-texto-suave)', marginTop: '1rem' }}>Renueva tu membresía o suscríbete a un canal para publicar.</p>
-                    </div>
-                  ) : (
-                    <div className="form-container">
-                      <h2 style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--color-texto-titulos)' }}>Crea tu próxima Noticia</h2>
-                      
-                      {publishMessage.text && (
-                        <div className={`message-box ${publishMessage.type === 'error' ? 'msg-error' : 'msg-success'}`}>
-                          {publishMessage.text}
-                        </div>
-                      )}
-
-                      <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                          <label>1. Titular de Impacto</label>
-                          <input 
-                            type="text" required maxLength="100" className="form-input"
-                            value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} 
-                            placeholder="Ej: LFAF Tech anuncia nueva IA..." 
-                          />
-                        </div>
-
-                        <div className="form-group">
-                          <label>2. Cuerpo de la Noticia</label>
-                          <textarea 
-                            required rows="6" className="form-input"
-                            value={formData.content} onChange={(e) => setFormData({...formData, content: e.target.value})} 
-                            placeholder="Desarrolla aquí la información. Nuestro motor extraerá el guion..."
-                          ></textarea>
-                        </div>
-
-                        <div className="form-row">
-                          <div className="form-group">
-                            <label>3. Imagen en Alta Calidad</label>
-                            <input type="file" required accept="image/*" id="file-upload" style={{display: 'none'}} onChange={handleImageChange} />
-                            <label htmlFor="file-upload" className="file-upload-box">
-                              {imagePreview ? (
-                                <img src={imagePreview} alt="Preview" className="img-preview" />
-                              ) : (
-                                <div style={{ color: 'var(--color-texto-suave)' }}>
-                                  <span style={{ fontSize: '2rem', display: 'block' }}>📸</span>
-                                  Clic para subir imagen
-                                </div>
-                              )}
-                            </label>
-                          </div>
-
-                          <div className="form-group">
-                            <label>4. Formato de YouTube</label>
-                            <div className="radio-group">
-                              <label className={`radio-option ${formData.videoType === 'short' ? 'selected' : ''}`}>
-                                <input type="radio" name="videoType" value="short" checked={formData.videoType === 'short'} onChange={(e) => setFormData({...formData, videoType: e.target.value})} style={{display:'none'}} />
-                                <span style={{ fontSize: '1.5rem', marginRight: '10px' }}>📱</span>
-                                <div>
-                                  <strong>YouTube Short</strong>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)' }}>Formato Vertical</div>
-                                </div>
-                              </label>
-                              <label className={`radio-option ${formData.videoType === 'video' ? 'selected' : ''}`}>
-                                <input type="radio" name="videoType" value="video" checked={formData.videoType === 'video'} onChange={(e) => setFormData({...formData, videoType: e.target.value})} style={{display:'none'}} />
-                                <span style={{ fontSize: '1.5rem', marginRight: '10px' }}>💻</span>
-                                <div>
-                                  <strong>Video Normal</strong>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--color-texto-suave)' }}>Formato Horizontal</div>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-
-                        <button type="submit" disabled={publishing} className="btn-submit">
-                          {publishing ? 'Procesando con IA...' : '🚀 PUBLICAR Y GENERAR VIDEO (-1 Crédito)'}
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* PESTAÑA: HISTORIAL */}
-            {activeTab === 'historial' && (
-              <div className="static-card tab-content fade-in" style={{ marginTop: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                  <h2 style={{ color: 'var(--color-texto-titulos)' }}>Tus Publicaciones</h2>
-                  <button onClick={() => fetchHistory(user.googleId)} className="btn-refresh">↻ Actualizar</button>
-                </div>
-
-                {loadingHistory ? (
-                  <div style={{ textAlign: 'center', padding: '3rem' }}>Sincronizando con los servidores...</div>
-                ) : history.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '4rem 1rem', background: 'var(--color-fondo-body)', borderRadius: '12px' }}>
-                    <span style={{ fontSize: '3rem' }}>👻</span>
-                    <h3 style={{ marginTop: '1rem', color: 'var(--color-texto-titulos)' }}>Aún no hay publicaciones</h3>
-                    <p style={{ color: 'var(--color-texto-suave)' }}>Ve al Estudio Creativo para crear tu primera noticia.</p>
-                  </div>
-                ) : (
-                  <div className="history-list">
-                    {history.map((article) => (
-                      <div key={article._id} className="history-item">
-                        <div className="history-date">
-                          <strong>{new Date(article.publishDate || article.createdAt).getDate()}</strong>
-                          <span>{new Date(article.publishDate || article.createdAt).toLocaleString('default', { month: 'short' })}</span>
-                        </div>
-                        <div className="history-info">
-                          <h4>{article.title}</h4>
-                          <div className="history-badges">
-                            <span className={`badge ${article.videoType === 'short' ? 'badge-purple' : 'badge-blue'}`}>
-                              {article.videoType === 'short' ? '📱 Short' : '💻 Video'}
-                            </span>
-                            <span className="badge badge-green">
-                              {article.status === 'published' ? 'Activo en Web' : 'Procesando'}
-                            </span>
-                          </div>
-                        </div>
-                        <Link href={`/articulo/${article._id}`} className="btn-view">Ver ↗</Link>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ESTILOS INTERNOS PARA NO AFECTAR TU CSS EXTERNO NI USAR TAILWIND */}
-      <style jsx>{`
-        .member-badge-hero {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          padding: 8px 16px;
-          border-radius: 50px;
-          font-size: 0.8rem;
-          font-weight: bold;
-          letter-spacing: 2px;
-        }
-        .btn-login-google {
-          background: white;
-          color: var(--color-texto-titulos);
-          border: 2px solid var(--color-borde);
-          padding: 15px 30px;
-          font-size: 1.1rem;
-          font-weight: 800;
-          border-radius: 50px;
-          margin-top: 2rem;
-          cursor: pointer;
-          transition: all 0.3s;
-          box-shadow: var(--sombra-md);
-        }
-        .btn-login-google:hover {
-          border-color: var(--color-primario);
-          color: var(--color-primario);
-          transform: translateY(-2px);
-        }
-        .error-msg {
-          margin-top: 1rem;
-          color: #ef4444;
-          background: #fef2f2;
-          padding: 10px;
-          border-radius: 8px;
-          display: inline-block;
-          font-weight: bold;
-        }
-        .icon-box {
-          width: 70px;
-          height: 70px;
-          background: var(--color-primario-light);
-          color: var(--color-primario);
-          border-radius: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2rem;
-          margin: 0 auto 1.5rem auto;
-        }
-        .channels-grid {
-          display: flex;
-          gap: 1rem;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-        .channel-btn {
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-          padding: 15px 25px;
-          border-radius: 12px;
-          font-weight: bold;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .channel-btn:hover { background: var(--color-accent); }
-        .user-header-panel {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 1rem;
-          padding: 1.5rem 2rem;
-        }
-        .user-info { display: flex; align-items: center; gap: 1rem; }
-        .user-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--color-borde); object-fit: cover;}
-        .level-badge {
-          position: absolute;
-          bottom: -5px; right: -5px;
-          background: #eab308; color: white;
-          font-size: 0.7rem; font-weight: bold;
-          padding: 3px 8px; border-radius: 20px;
-          border: 2px solid white;
-        }
-        .panel-tabs { display: flex; gap: 10px; background: var(--color-fondo-body); padding: 5px; border-radius: 12px; }
-        .tab-btn {
-          background: none; border: none; padding: 10px 20px;
-          font-weight: bold; color: var(--color-texto-suave); border-radius: 8px;
-          cursor: pointer; transition: 0.2s;
-        }
-        .tab-btn.active { background: white; color: var(--color-primario); box-shadow: var(--sombra-sm); }
-        .tab-btn.logout { color: #ef4444; }
-        .tab-btn.logout:hover { background: #fef2f2; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
-        .stat-card { background: white; padding: 2rem; border-radius: var(--radio-card); box-shadow: var(--sombra-sm); border: 1px solid var(--color-borde); }
-        .form-container { max-width: 800px; margin: 0 auto; }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 0.5rem; color: var(--color-texto-titulos); }
-        .form-input {
-          width: 100%; padding: 15px; border-radius: 12px;
-          border: 1px solid var(--color-borde); background: var(--color-fondo-body);
-          font-family: inherit; font-size: 1rem; transition: 0.3s; outline: none;
-        }
-        .form-input:focus { border-color: var(--color-primario); background: white; box-shadow: 0 0 0 3px var(--color-primario-light); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
-        .file-upload-box {
-          display: flex; align-items: center; justify-content: center;
-          height: 120px; border: 2px dashed var(--color-borde); border-radius: 12px;
-          cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s;
-          background: var(--color-fondo-body); overflow: hidden;
-        }
-        .file-upload-box:hover { border-color: var(--color-primario); background: var(--color-primario-light); }
-        .img-preview { width: 100%; height: 100%; object-fit: cover; }
-        .radio-group { display: flex; flex-direction: column; gap: 10px; }
-        .radio-option {
-          display: flex; align-items: center; padding: 12px; border: 2px solid var(--color-borde);
-          border-radius: 12px; cursor: pointer; transition: 0.2s; background: white;
-        }
-        .radio-option.selected { border-color: var(--color-primario); background: var(--color-primario-light); }
-        .btn-submit {
-          width: 100%; background: #16a34a; color: white; padding: 20px;
-          border: none; border-radius: 12px; font-weight: 900; font-size: 1.2rem;
-          cursor: pointer; transition: 0.3s; margin-top: 1rem; box-shadow: 0 10px 20px rgba(22, 163, 74, 0.2);
-        }
-        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(22, 163, 74, 0.3); }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-        .message-box { padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; margin-bottom: 2rem; }
-        .msg-error { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; }
-        .msg-success { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
-        .history-list { display: flex; flex-direction: column; gap: 1rem; }
-        .history-item {
-          display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem;
-          background: var(--color-fondo-body); border-radius: 12px; border: 1px solid var(--color-borde);
-          transition: 0.2s;
-        }
-        .history-item:hover { background: white; box-shadow: var(--sombra-md); border-color: var(--color-primario-light); }
-        .history-date { text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid var(--color-borde); min-width: 70px; }
-        .history-date strong { display: block; font-size: 1.5rem; line-height: 1; color: var(--color-texto-titulos); }
-        .history-date span { font-size: 0.75rem; text-transform: uppercase; color: var(--color-texto-suave); font-weight: bold; }
-        .history-info { flex-grow: 1; }
-        .history-info h4 { margin-bottom: 0.5rem; color: var(--color-texto-titulos); font-size: 1.1rem; }
-        .history-badges { display: flex; gap: 10px; }
-        .badge { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-        .badge-purple { background: #f3e8ff; color: #7e22ce; }
-        .badge-blue { background: #e0f2fe; color: #0284c7; }
-        .badge-green { background: #dcfce7; color: #16a34a; }
-        .btn-view { background: var(--color-tech-bg); color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; }
-        .btn-view:hover { background: black; }
-        .btn-refresh { background: var(--color-fondo-body); border: 1px solid var(--color-borde); padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-refresh:hover { background: white; border-color: var(--color-primario); color: var(--color-primario); }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-    </Layout>
-  );
+function ChannelAvatar({ name, src }) {
+    const [failed, setFailed] = useState(false);
+    if (!src || failed) {
+        return <span className="channel-join-fallback" aria-hidden="true"><i className="fab fa-youtube"></i></span>;
+    }
+    return <img src={src} alt="" onError={() => setFailed(true)} />;
 }
 
 export default function Miembros() {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  if (!clientId) {
-    return <div style={{textAlign: 'center', padding: '5rem', color: 'red'}}>Faltan credenciales de Google</div>;
-  }
-  return (
-    <GoogleOAuthProvider clientId={clientId}>
-      <MiembrosDashboard />
-    </GoogleOAuthProvider>
-  );
+    const [members, setMembers] = useState([]);
+    const [channels, setChannels] = useState(FALLBACK_CHANNELS);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12000);
+
+        fetch(SUPPORTERS_URL, { signal: controller.signal })
+            .then((response) => {
+                if (!response.ok) throw new Error('supporters');
+                return response.json();
+            })
+            .then((data) => {
+                if (cancelled) return;
+                setMembers(sanitizeMembers(data && data.members));
+                setChannels(sanitizeChannels(data && data.channels));
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setMembers([]);
+                setChannels(FALLBACK_CHANNELS);
+            })
+            .finally(() => {
+                clearTimeout(timer);
+                if (!cancelled) setLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, []);
+
+    const groups = groupMembers(members);
+    const total = members.length;
+
+    return (
+        <Layout>
+            <Head>
+                <title>Miembros que apoyan Noticias.lat</title>
+                <meta name="description" content="Gracias a las personas con membresía activa que sostienen Noticias.lat. Socios fundadores, impulsores, aliados y colaboradores de nuestros canales." />
+                <meta property="og:title" content="Miembros que apoyan Noticias.lat" />
+                <meta property="og:description" content="Estas personas tienen una membresía activa y hacen posible las noticias, el audio y el video de Noticias.lat." />
+                <meta property="og:url" content="https://www.noticias.lat/miembros" />
+                <link rel="canonical" href="https://www.noticias.lat/miembros" />
+            </Head>
+
+            <div className="supporters-page">
+                <header className="supporters-hero">
+                    <div className="container">
+                        <span className="supporters-kicker">Quienes apoyan</span>
+                        <h1>Gracias por sostener <span>Noticias.lat</span></h1>
+                        <p className="supporters-lead">
+                            Cada persona de esta lista tiene una membresía activa en nuestros canales de YouTube.
+                            Con ese apoyo siguen al aire las noticias, el audio y los videos para toda Latinoamérica.
+                        </p>
+                        {total > 0 && (
+                            <p className="supporters-count">{countLabel(total)}</p>
+                        )}
+                    </div>
+                </header>
+
+                <div className="supporters-wrap">
+                    <p className="sr-only" role="status">
+                        {loading ? 'Cargando la lista de miembros.' : countLabel(total)}
+                    </p>
+
+                    <section aria-label="Niveles de la membresía">
+                        <div className="tier-legend">
+                            {TIERS.map((tier) => {
+                                const count = members.filter((member) => member.tier === tier.key).length;
+                                const className = `tier-legend-card tier-${tier.key}`;
+                                const body = (
+                                    <>
+                                        <span className="tier-emoji" aria-hidden="true">{tier.emoji}</span>
+                                        <strong>{tier.name}</strong>
+                                        <span className="tier-price">{tier.price}</span>
+                                        <p>{tier.message}</p>
+                                        {count > 0 && (
+                                            <span className="tier-legend-count">
+                                                {count === 1 ? '1 miembro' : `${count} miembros`}
+                                            </span>
+                                        )}
+                                    </>
+                                );
+                                if (count > 0) {
+                                    return <a key={tier.key} className={className} href={`#nivel-${tier.key}`}>{body}</a>;
+                                }
+                                return <article key={tier.key} className={className}>{body}</article>;
+                            })}
+                        </div>
+                        {!loading && total === 0 && (
+                            <p className="supporters-note">
+                                La lista se actualiza sola con las membresías activas de YouTube.
+                                Si acabas de unirte, tu nombre aparece en cuanto el canal confirma el apoyo.
+                            </p>
+                        )}
+                    </section>
+
+                    {loading && (
+                        <div className="supporter-grid" style={{ marginTop: '1.5rem' }} aria-hidden="true">
+                            {Array.from({ length: 8 }).map((_, index) => (
+                                <div key={index} className="supporter-skeleton" />
+                            ))}
+                        </div>
+                    )}
+
+                    {groups.map((group) => (
+                        <section
+                            key={group.key}
+                            id={`nivel-${group.key}`}
+                            className={`tier-section tier-${TIERS.some((tier) => tier.key === group.key) ? group.key : 'miembro'}`}
+                        >
+                            <div className="tier-head">
+                                <div className="tier-head-copy">
+                                    <span className="tier-emoji" aria-hidden="true">{group.emoji}</span>
+                                    <div>
+                                        <h2>{group.name}</h2>
+                                        <p>{group.message}</p>
+                                    </div>
+                                </div>
+                                <span className="tier-head-count">{group.members.length}</span>
+                            </div>
+                            <div className="supporter-grid">
+                                {group.members.map((member) => {
+                                    const content = (
+                                        <>
+                                            <Avatar
+                                                name={member.name}
+                                                src={member.avatar}
+                                                className="supporter-avatar"
+                                                fallbackClass="supporter-fallback"
+                                            />
+                                            <span>
+                                                <span className="supporter-name">{member.name}</span>
+                                                <span className="supporter-meta" style={{ display: 'block' }}>{sinceLabel(member)}</span>
+                                                {member.channels.length > 0 && (
+                                                    <span className="supporter-channels" style={{ display: 'block' }}>
+                                                        {member.channels.join(' · ')}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </>
+                                    );
+                                    if (member.url) {
+                                        return (
+                                            <a
+                                                key={`${group.key}-${member.id}`}
+                                                className="supporter-card"
+                                                href={member.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {content}
+                                            </a>
+                                        );
+                                    }
+                                    return (
+                                        <div key={`${group.key}-${member.id}`} className="supporter-card">
+                                            {content}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    ))}
+
+                    <section className="supporters-channels" aria-labelledby="canales-titulo">
+                        <h2 id="canales-titulo">Únete desde cualquiera de los 4 canales</h2>
+                        <p className="section-lead">
+                            La membresía se activa en YouTube. Elige el canal que miras y apoya a Noticias.lat con el nivel que quieras.
+                        </p>
+                        <div className="channel-join-grid">
+                            {channels.map((channel) => (
+                                <article key={channel.id} className="channel-join-card">
+                                    <ChannelAvatar name={channel.name} src={channel.avatar} />
+                                    <h3>{channel.name}</h3>
+                                    {channel.handle && <p className="handle">{channel.handle}</p>}
+                                    {subscriberLabel(channel.subscribers) && (
+                                        <p className="subs">{subscriberLabel(channel.subscribers)}</p>
+                                    )}
+                                    <a
+                                        className="channel-join-btn"
+                                        href={channel.joinUrl || channel.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        Hacerse miembro
+                                    </a>
+                                </article>
+                            ))}
+                        </div>
+                        <p className="supporters-footnote">
+                            Puedes cancelar cuando quieras desde YouTube.
+                            Si ya tienes una membresía, también puedes <Link href="/publicar">publicar una noticia</Link>.
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </Layout>
+    );
 }

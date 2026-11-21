@@ -27,6 +27,8 @@ export default function Header() {
     // Páginas estáticas
     if (router.pathname.startsWith('/sobre-nosotros')) activeKey = 'sobre-nosotros';
     if (router.pathname.startsWith('/contacto')) activeKey = 'contacto';
+    if (router.pathname.startsWith('/miembros')) activeKey = 'miembros';
+    if (router.pathname.startsWith('/publicar')) activeKey = 'publicar';
 
     const getLinkClass = (key) => activeKey === key ? 'nav-link active' : 'nav-link';
     
@@ -77,9 +79,11 @@ export default function Header() {
                             </Link>
                         </li>
 
-                        <Link href="/miembros" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-bold transition shadow-md ml-4 flex items-center gap-2 hover:-translate-y-0.5">
-                                <span className="text-xl">🌟</span> Publicar Noticia
-                        </Link>
+                        <li>
+                            <Link href="/miembros" className={`nav-link-members ${activeKey === 'miembros' ? 'active' : ''}`}>
+                                <i className="fas fa-heart"></i> Miembros
+                            </Link>
+                        </li>
 
                         <li><Link href="/?categoria=todos" className={getLinkClass('todos')}>General</Link></li>
                         <li><Link href="/?categoria=politica" className={getLinkClass('politica')}>Política</Link></li>
@@ -155,6 +159,10 @@ export default function Header() {
                         <i className="fas fa-podcast"></i> Escuchar Podcast / Audios
                     </Link>
 
+                    <Link href="/miembros" className="mobile-members-btn" onClick={closeMenu}>
+                        <i className="fas fa-heart"></i> Miembros que apoyan
+                    </Link>
+
                     <div className="mobile-links-list">
                         <p className="mobile-section-title">Secciones</p>
                         
@@ -218,6 +226,7 @@ export default function Header() {
                         <div className="mobile-footer-links">
                             <Link href="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link>
                             <Link href="/contacto" onClick={closeMenu}>Contacto</Link>
+                            <Link href="/publicar" onClick={closeMenu}>Publicar noticia</Link>
                         </div>
                     </div>
                 </div>
